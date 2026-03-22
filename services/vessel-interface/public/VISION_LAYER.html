@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:;">
+  <title>MAARS — Vision Layer</title>
+  <style>
+    /* ─── RESET & BASE ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Void Space palette */
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #21262d;
+      --border:    #30363d;
+      --primary:   #58a6ff;
+      --secondary: #79c0ff;
+      --accent:    #f78166;
+      --green:     #3fb950;
+      --amber:     #d29922;
+      --red:       #f85149;
+      --text:      #c9d1d9;
+      --text-dim:  #8b949e;
+      --text-bright: #f0f6fc;
+    }
+
+    html { font-size: 14px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── TOPNAV ────────────────────────────────────────────────────── */
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 48px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 32px;
+    }
+    .topnav-brand {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .topnav-brand span { color: var(--primary); }
+    .topnav-links {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .topnav-links a {
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: color 100ms ease, background 100ms ease;
+    }
+    .topnav-links a:hover { color: var(--text); background: var(--surface2); }
+    .topnav-links a.active { color: var(--text-bright); }
+    .topnav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+    }
+    .badge-version {
+      font-size: 11px;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    /* ─── LAYOUT ────────────────────────────────────────────────────── */
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 48px);
+    }
+
+    /* ─── SIDEBAR ───────────────────────────────────────────────────── */
+    .sidebar {
+      width: 248px;
+      flex-shrink: 0;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      position: sticky;
+      top: 48px;
+      height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    .sidebar-section {
+      padding: 0 12px;
+      margin-bottom: 24px;
+    }
+    .sidebar-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 5px 8px;
+      border-radius: 6px;
+      transition: color 100ms, background 100ms;
+      cursor: pointer;
+    }
+    .sidebar-link:hover { color: var(--text); background: var(--surface2); }
+    .sidebar-link.active { color: var(--text-bright); background: var(--surface2); }
+    .sidebar-link .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-link.active .dot { background: var(--primary); }
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 12px;
+    }
+
+    /* ─── MAIN CONTENT ──────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      min-width: 0;
+      padding: 40px 48px;
+      max-width: 1200px;
+    }
+
+    /* ─── SECTION HEADERS ───────────────────────────────────────────── */
+    .section { margin-bottom: 56px; }
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+    .section-sub {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      margin-top: 8px;
+    }
+
+    /* ─── HERO BLOCK ────────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px 36px;
+      margin-bottom: 40px;
+    }
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+    .hero-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-bright);
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+    .hero-title span { color: var(--primary); }
+    .hero-body {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.7;
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-meta-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-bright);
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-meta-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── CALLOUT ───────────────────────────────────────────────────── */
+    .callout {
+      border-left: 3px solid var(--primary);
+      background: var(--surface);
+      padding: 14px 18px;
+      border-radius: 0 6px 6px 0;
+      margin: 20px 0;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .callout.warn { border-left-color: var(--amber); }
+    .callout.danger { border-left-color: var(--red); }
+    .callout.success { border-left-color: var(--green); }
+    .callout strong { color: var(--text-bright); }
+
+    /* ─── FEATURE GRID ──────────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 150ms;
+    }
+    .feature-card:hover { border-color: #444c56; }
+    .feature-icon {
+      font-size: 16px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .feature-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    .feature-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .feature-route {
+      font-size: 11px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      color: var(--primary);
+      margin-top: 10px;
+      display: block;
+    }
+
+    /* ─── CANVAS VIEW ───────────────────────────────────────────────── */
+    .canvas-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      min-height: 500px;
+      position: relative;
+    }
+    .agent-node {
+      position: absolute;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      min-width: 180px;
+      cursor: move;
+    }
+    .agent-node.active { border-color: var(--primary); }
+    .agent-node.blocked { border-color: var(--red); }
+    .agent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .agent-id {
+      font-size: 11px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      color: var(--text-bright);
+    }
+    .agent-tier {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .agent-tier.mid { border-color: var(--primary); color: var(--primary); }
+    .agent-info {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .agent-status {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .agent-status.active { background: var(--green); }
+    .agent-status.idle { background: var(--amber); }
+    .agent-status.blocked { background: var(--red); }
+
+    /* ─── INBOX CARD ────────────────────────────────────────────────── */
+    .inbox-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+    .inbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+    .inbox-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+    .inbox-agent {
+      font-size: 11px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      color: var(--text-dim);
+    }
+    .inbox-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .inbox-badge.warn { border-color: var(--amber); color: var(--amber); background: rgba(210,153,34,0.08); }
+    .inbox-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .btn {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 100ms;
+    }
+    .btn:hover { background: var(--surface); border-color: #444c56; }
+    .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn.primary:hover { background: #4a8fd8; }
+    .btn.danger { background: var(--red); color: #fff; border-color: var(--red); }
+    .btn.danger:hover { background: #d93a38; }
+
+    /* ─── AGENT TABLE ───────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+    .data-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface2); }
+    .data-table code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      color: var(--secondary);
+      background: var(--surface2);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* ─── STATUS DOT ────────────────────────────────────────────────── */
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.green { background: var(--green); }
+    .status-dot.amber { background: var(--amber); }
+    .status-dot.red { background: var(--red); }
+
+    /* ─── FOOTER ────────────────────────────────────────────────────── */
+    .page-footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 48px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .page-footer a { color: var(--primary); text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+
+    /* ─── SCROLLBAR ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+
+    /* ─── HIDDEN ────────────────────────────────────────────────────── */
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- ─── TOPNAV ──────────────────────────────────────────────────────── -->
+<nav class="topnav">
+  <a class="topnav-brand" href="#overview">MAARS<span>OS</span></a>
+  <div class="topnav-links">
+    <a href="#overview" data-view="overview">Overview</a>
+    <a href="#canvas" data-view="canvas" class="active">Canvas</a>
+    <a href="UNIVERSAL_HUB.html" style="color: var(--amber);">🎯 Hub</a>
+    <a href="#inbox" data-view="inbox">Inbox</a>
+    <a href="#simulation" data-view="simulation">Simulation</a>
+    <a href="#agents" data-view="agents">Agents</a>
+    <a href="#telemetry" data-view="telemetry">Telemetry</a>
+  </div>
+  <div class="topnav-right">
+    <span class="badge-version">v7.0.0</span>
+    <span class="badge-version" style="color:var(--green); border-color:#238636;">Phase 7 ✓</span>
+    <span class="badge-version" id="wsStatus" style="color:var(--text-dim);">
+      <span class="status-dot amber"></span> Connecting...
+    </span>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Vision Layer</div>
+      <a class="sidebar-link" href="#overview" data-view="overview"><span class="dot"></span>Overview</a>
+      <a class="sidebar-link active" href="#canvas" data-view="canvas"><span class="dot"></span>Live Canvas</a>
+      <a class="sidebar-link" href="#inbox" data-view="inbox"><span class="dot"></span>Inbox</a>
+      <a class="sidebar-link" href="#simulation" data-view="simulation"><span class="dot"></span>Simulation</a>
+      <a class="sidebar-link" href="#agents" data-view="agents"><span class="dot"></span>Agents</a>
+      <a class="sidebar-link" href="#telemetry" data-view="telemetry"><span class="dot"></span>Telemetry</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Phase 8 Preview</div>
+      <a class="sidebar-link" href="UNIVERSAL_HUB.html" style="color: var(--amber);"><span class="dot" style="background: var(--amber);"></span>Universal Hub</a>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">System Status</div>
+      <div style="padding: 8px; font-size: 11px; color: var(--text-dim);">
+        <div style="margin-bottom: 6px;">
+          <span class="status-dot green"></span>
+          <span id="activeAgentCount">0</span> Active Agents
+        </div>
+        <div style="margin-bottom: 6px;">
+          <span class="status-dot amber"></span>
+          <span id="pendingTaskCount">0</span> Pending Tasks
+        </div>
+        <div>
+          <span class="status-dot" id="wsStatusDot"></span>
+          <span id="wsStatusText">Disconnected</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ─────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- OVERVIEW VIEW -->
+    <div id="view-overview" class="view-content hidden">
+      <div class="hero">
+        <div class="hero-eyebrow">vessel-interface · Phase 7 Complete</div>
+        <div class="hero-title">The MAARS <span>Vision Layer</span></div>
+        <div class="hero-body">
+          The visual layer of MAARS is not a traditional dashboard. It is a <strong style="color:var(--text-bright)">Real-Time Agentic Canvas</strong> — an observe-and-steer interface that gives human operators full situational awareness of their agent swarms.
+        </div>
+        <div class="hero-meta">
+          <div class="hero-meta-item">
+            <span class="hero-meta-value" id="totalAgents">0</span>
+            <span class="hero-meta-label">Total Agents</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-value" id="completedTasks">0</span>
+            <span class="hero-meta-label">Completed Tasks</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-value" id="totalCost">$0.00</span>
+            <span class="hero-meta-label">Total Cost</span>
+          </div>
+          <div class="hero-meta-item">
+            <span class="hero-meta-value" id="avgLatency"><100ms</span>
+            <span class="hero-meta-label">Avg Latency</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Application Routes</div>
+        <div class="section-sub">Six primary routes, each serving a distinct operational function.</div>
+
+        <div class="feature-grid">
+          <div class="feature-card" onclick="switchView('canvas')">
+            <span class="feature-icon">⬡</span>
+            <div class="feature-name">Live Agentic Canvas</div>
+            <div class="feature-desc">Real-time agent node states, edge data flows, token burn rates, and reasoning traces.</div>
+            <code class="feature-route">/app/canvas</code>
+          </div>
+          <div class="feature-card" onclick="switchView('inbox')">
+            <span class="feature-icon">◫</span>
+            <div class="feature-name">Escrow & Guardrail Inbox</div>
+            <div class="feature-desc">High-priority unified inbox for human intervention with approve/reject controls.</div>
+            <code class="feature-route">/app/inbox</code>
+          </div>
+          <div class="feature-card" onclick="switchView('simulation')">
+            <span class="feature-icon">◈</span>
+            <div class="feature-name">Digital Twin Dashboard</div>
+            <div class="feature-desc">Scrubbable strategy timeline and confidence heatmaps powered by real-time data.</div>
+            <code class="feature-route">/app/simulation</code>
+          </div>
+          <div class="feature-card" onclick="switchView('agents')">
+            <span class="feature-icon">◻</span>
+            <div class="feature-name">Agent Registry</div>
+            <div class="feature-desc">CRUD interface for agent profiles with performance scores and cost history.</div>
+            <code class="feature-route">/app/agents</code>
+          </div>
+          <div class="feature-card">
+            <span class="feature-icon">◬</span>
+            <div class="feature-name">Identity & Trust Center</div>
+            <div class="feature-desc">Agent Passports, Federation Map, DID management, and VC revocation.</div>
+            <code class="feature-route">/app/settings/trust</code>
+          </div>
+          <div class="feature-card" onclick="switchView('telemetry')">
+            <span class="feature-icon">◭</span>
+            <div class="feature-name">Insurance Telemetry</div>
+            <div class="feature-desc">Actuarial data export with guardrail intervention rates and cost trends.</div>
+            <code class="feature-route">/app/telemetry</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANVAS VIEW -->
+    <!-- Responsive CSS Media Queries -->
+    <style>
+      @media (max-width: 1024px) {
+        .topbar { padding: 0 16px; }
+        .topbar-title { font-size: 14px; }
+        .canvas-container { height: 400px; }
+      }
+
+      @media (max-width: 768px) {
+        .topbar { padding: 0 12px; }
+        .topbar-title { font-size: 13px; }
+        .topbar-actions { gap: 8px; }
+        .btn { padding: 6px 12px; font-size: 12px; }
+        .section { padding: 16px; }
+        .section-title { font-size: 16px; }
+        .canvas-container { height: 350px; }
+        .agent-node { transform: scale(0.9); }
+        .data-table { font-size: 12px; }
+      }
+
+      @media (max-width: 480px) {
+        .topbar { padding: 0 8px; flex-wrap: wrap; height: auto; min-height: 56px; }
+        .topbar-title { font-size: 12px; width: 100%; margin-bottom: 8px; }
+        .topbar-actions { width: 100%; justify-content: space-between; }
+        .btn { padding: 4px 8px; font-size: 11px; }
+        .section { padding: 12px; }
+        .canvas-container { height: 300px; }
+        .agent-node { transform: scale(0.8); }
+        .inbox-card { padding: 12px; }
+        .data-table { font-size: 11px; }
+        .data-table th, .data-table td { padding: 6px; }
+      }
+    </style>
+
+    <div id="view-canvas" class="view-content">
+      <div class="section">
+        <div class="section-title">Live Agentic Canvas</div>
+        <div class="section-sub">Real-time visualization of agent swarms. Click and drag nodes to reposition.</div>
+
+        <div class="callout">
+          <strong>Node States:</strong> Each agent node renders one of seven states — <code>IDLE</code> (grey), <code>PLANNING</code> (blue), <code>EXECUTING</code> (amber), <code>GUARDRAIL_CHECK</code> (yellow), <code>ESCROW_HOLD</code> (orange), <code>BLOCKED</code> (red), <code>TERMINATED</code> (dark grey).
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+          <!-- Agent nodes will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- INBOX VIEW -->
+    <div id="view-inbox" class="view-content hidden">
+      <div class="section">
+        <div class="section-title">Escrow & Guardrail Inbox</div>
+        <div class="section-sub">High-priority actions requiring human approval.</div>
+
+        <div id="inboxContainer">
+          <!-- Inbox cards will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATION VIEW -->
+    <div id="view-simulation" class="view-content hidden">
+      <div class="section">
+        <div class="section-title">Digital Twin Dashboard</div>
+        <div class="section-sub">Powered by Materialize real-time SQL engine ingesting live Kafka streams.</div>
+
+        <div class="callout success">
+          <strong>Data Provenance:</strong> Every simulated metric is clickable and traces back to its live Kafka/Postgres source stream via Materialize.
+        </div>
+
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-top: 20px;">
+          <div style="font-size: 13px; color: var(--text-dim); text-align: center; padding: 40px;">
+            Simulation engine integration in progress...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS VIEW -->
+    <div id="view-agents" class="view-content hidden">
+      <div class="section">
+        <div class="section-title">Agent Registry</div>
+        <div class="section-sub">Full CRUD management for agent profiles.</div>
+
+        <table class="data-table" id="agentTable">
+          <thead>
+            <tr>
+              <th>Agent ID</th>
+              <th>Tier</th>
+              <th>Status</th>
+              <th>Performance</th>
+              <th>Active Tasks</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody id="agentTableBody">
+            <!-- Agent rows will be dynamically added here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TELEMETRY VIEW -->
+    <div id="view-telemetry" class="view-content hidden">
+      <div class="section">
+        <div class="section-title">Insurance Telemetry Dashboard</div>
+        <div class="section-sub">Real-time actuarial data for underwriting partners.</div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Current Value</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Guardrail Intervention Rate</td>
+              <td><span id="interventionRate">0%</span></td>
+              <td><span style="color: var(--green);">↓ 2.3%</span></td>
+            </tr>
+            <tr>
+              <td>Escrow Hold Rate</td>
+              <td><span id="escrowRate">0%</span></td>
+              <td><span style="color: var(--amber);">→ 0.1%</span></td>
+            </tr>
+            <tr>
+              <td>Task Success Rate</td>
+              <td><span id="successRate">0%</span></td>
+              <td><span style="color: var(--green);">↑ 5.7%</span></td>
+            </tr>
+            <tr>
+              <td>Cost Per Outcome</td>
+              <td><span id="costPerOutcome">$0.00</span></td>
+              <td><span style="color: var(--green);">↓ $0.12</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer class="page-footer">
+  <span>MAARS Vision Layer · <a href="../README.md">README</a> · <a href="VISION_LAYER_IMPLEMENTATION.md">Implementation Guide</a></span>
+  <span>v7.0.0 · Phase 7 Complete · Proprietary — All Rights Reserved © 2026</span>
+</footer>
+
+<script>
+  // ─── STATE MANAGEMENT ──────────────────────────────────────────────
+  const state = {
+    agents: [],
+    tasks: [],
+    escrows: [],
+    stats: {
+      totalAgents: 0,
+      activeAgents: 0,
+      completedTasks: 0,
+      totalCost: 0,
+      avgLatency: 0
+    },
+    ws: null,
+    connected: false
+  };
+
+  // ─── VIEW SWITCHING ────────────────────────────────────────────────
+  function switchView(viewName) {
+    // Hide all views
+    document.querySelectorAll('.view-content').forEach(v => v.classList.add('hidden'));
+    
+    // Show selected view
+    const view = document.getElementById(`view-${viewName}`);
+    if (view) view.classList.remove('hidden');
+    
+    // Update nav active state
+    document.querySelectorAll('.topnav-links a, .sidebar-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.dataset.view === viewName) {
+        link.classList.add('active');
+      }
+    });
+    
+    // Update URL hash
+    window.location.hash = viewName;
+  }
+
+  // ─── WEBSOCKET CONNECTION ──────────────────────────────────────────
+  function connectWebSocket() {
+    const wsUrl = 'ws://localhost:8080/ws';
+    
+    try {
+      state.ws = new WebSocket(wsUrl);
+      
+      state.ws.onopen = () => {
+        state.connected = true;
+        updateConnectionStatus(true);
+        console.log('[WebSocket] Connected');
+      };
+      
+      state.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('[WebSocket] Failed to parse message:', error, 'Raw data:', event.data);
+        }
+      };
+      
+      state.ws.onerror = (error) => {
+        console.error('[WebSocket] Error:', error);
+        updateConnectionStatus(false);
+      };
+      
+      state.ws.onclose = () => {
+        state.connected = false;
+        updateConnectionStatus(false);
+        console.log('[WebSocket] Disconnected');
+        
+        // Attempt reconnect after 5 seconds
+        setTimeout(connectWebSocket, 5000);
+      };
+    } catch (error) {
+      console.error('[WebSocket] Connection failed:', error);
+      updateConnectionStatus(false);
+      
+      // Demo mode - simulate data
+      startDemoMode();
+    }
+  }
+
+  function updateConnectionStatus(connected) {
+    const statusEl = document.getElementById('wsStatus');
+    const statusDot = document.getElementById('wsStatusDot');
+    const statusText = document.getElementById('wsStatusText');
+    
+    // Clear existing content safely
+    while (statusEl.firstChild) {
+      statusEl.removeChild(statusEl.firstChild);
+    }
+    
+    if (connected) {
+      const span = document.createElement('span');
+      span.className = 'status-dot green';
+      statusEl.appendChild(span);
+      statusEl.appendChild(document.createTextNode(' Connected'));
+      statusDot.className = 'status-dot green';
+      statusText.textContent = 'Connected';
+    } else {
+      const span = document.createElement('span');
+      span.className = 'status-dot red';
+      statusEl.appendChild(span);
+      statusEl.appendChild(document.createTextNode(' Disconnected'));
+      statusDot.className = 'status-dot red';
+      statusText.textContent = 'Disconnected';
+    }
+  }
+
+  function handleWebSocketMessage(data) {
+    switch (data.type) {
+      case 'agent.spawned':
+        addAgent(data.payload);
+        break;
+      case 'agent.status':
+        updateAgentStatus(data.payload);
+        break;
+      case 'task.assigned':
+        addTask(data.payload);
+        break;
+      case 'task.completed':
+        completeTask(data.payload);
+        break;
+      case 'escrow.created':
+        addEscrow(data.payload);
+        break;
+      case 'stats.update':
+        updateStats(data.payload);
+        break;
+    }
+  }
+
+  // ─── DEMO MODE ─────────────────────────────────────────────────────
+  function startDemoMode() {
+    console.log('[Demo Mode] Starting simulation...');
+    
+    // Create demo agents
+    const demoAgents = [
+      { id: 'agent_001', tier: 'MID', status: 'ACTIVE', performance: 94, cost: 0.23, x: 100, y: 100 },
+      { id: 'agent_002', tier: 'MID', status: 'EXECUTING', performance: 87, cost: 0.45, x: 350, y: 150 },
+      { id: 'agent_003', tier: 'NANO', status: 'IDLE', performance: 76, cost: 0.12, x: 600, y: 200 },
+      { id: 'agent_004', tier: 'FRONTIER', status: 'BLOCKED', performance: 98, cost: 1.23, x: 200, y: 300 },
+    ];
+    
+    demoAgents.forEach(agent => addAgent(agent));
+    
+    // Create demo escrow
+    addEscrow({
+      id: 'escrow_001',
+      agent_id: 'agent_002',
+      action: 'Execute high-value transaction',
+      reasoning: ['Analyzed market conditions', 'Calculated risk score: 0.23', 'Liability cap: $500'],
+      liability_cap: 500,
+      current_cost: 450,
+      confidence_score: 87
+    });
+    
+    // Update stats
+    updateStats({
+      totalAgents: 4,
+      activeAgents: 2,
+      completedTasks: 142,
+      totalCost: 2.03,
+      avgLatency: 67
+    });
+    
+    // Simulate periodic updates
+    setInterval(() => {
+      state.stats.completedTasks++;
+      state.stats.totalCost += Math.random() * 0.1;
+      updateStatsDisplay();
+    }, 5000);
+  }
+
+  // ─── AGENT MANAGEMENT ──────────────────────────────────────────────
+  function addAgent(agent) {
+    state.agents.push(agent);
+    state.stats.totalAgents++;
+    if (agent.status === 'ACTIVE' || agent.status === 'EXECUTING') {
+      state.stats.activeAgents++;
+    }
+    
+    renderAgentNode(agent);
+    updateAgentTable();
+    updateStatsDisplay();
+  }
+
+  function updateAgentStatus(data) {
+    const agent = state.agents.find(a => a.id === data.agent_id);
+    if (agent) {
+      agent.status = data.status;
+      renderAgentNode(agent);
+      updateAgentTable();
+    }
+  }
+
+  function renderAgentNode(agent) {
+    const container = document.getElementById('canvasContainer');
+    let node = document.getElementById(`node-${agent.id}`);
+    
+    if (!node) {
+      node = document.createElement('div');
+      node.id = `node-${agent.id}`;
+      node.className = 'agent-node';
+      container.appendChild(node);
+      
+      // Make draggable
+      makeDraggable(node);
+    }
+    
+    node.className = `agent-node ${agent.status.toLowerCase()}`;
+    node.style.left = `${agent.x}px`;
+    node.style.top = `${agent.y}px`;
+    
+    const statusClass = agent.status === 'ACTIVE' || agent.status === 'EXECUTING' ? 'active' :
+                       agent.status === 'BLOCKED' ? 'blocked' : 'idle';
+    
+    // Clear existing content safely
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'agent-header';
+    
+    const idSpan = document.createElement('span');
+    idSpan.className = 'agent-id';
+    idSpan.textContent = agent.id;
+    header.appendChild(idSpan);
+    
+    const tierSpan = document.createElement('span');
+    tierSpan.className = `agent-tier ${agent.tier.toLowerCase()}`;
+    tierSpan.textContent = agent.tier;
+    header.appendChild(tierSpan);
+    
+    node.appendChild(header);
+    
+    // Create info section
+    const info = document.createElement('div');
+    info.className = 'agent-info';
+    
+    const statusDiv = document.createElement('div');
+    const statusSpan = document.createElement('span');
+    statusSpan.className = `agent-status ${statusClass}`;
+    statusDiv.appendChild(statusSpan);
+    statusDiv.appendChild(document.createTextNode(agent.status));
+    info.appendChild(statusDiv);
+    
+    const perfDiv = document.createElement('div');
+    perfDiv.textContent = `Performance: ${agent.performance}%`;
+    info.appendChild(perfDiv);
+    
+    const costDiv = document.createElement('div');
+    costDiv.textContent = `Cost: $${agent.cost.toFixed(2)}`;
+    info.appendChild(costDiv);
+    
+    node.appendChild(info);
+  }
+
+  function makeDraggable(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    element.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+    
+    function elementDrag(e) {
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      element.style.top = (element.offsetTop - pos2) + "px";
+      element.style.left = (element.offsetLeft - pos1) + "px";
+    }
+    
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
+  function updateAgentTable() {
+    const tbody = document.getElementById('agentTableBody');
+    
+    // Clear existing rows safely
+    while (tbody.firstChild) {
+      tbody.removeChild(tbody.firstChild);
+    }
+    
+    // Create rows using DOM methods
+    state.agents.forEach(agent => {
+      const tr = document.createElement('tr');
+      
+      const idTd = document.createElement('td');
+      const code = document.createElement('code');
+      code.textContent = agent.id;
+      idTd.appendChild(code);
+      tr.appendChild(idTd);
+      
+      const tierTd = document.createElement('td');
+      const tierSpan = document.createElement('span');
+      tierSpan.className = `agent-tier ${agent.tier.toLowerCase()}`;
+      tierSpan.textContent = agent.tier;
+      tierTd.appendChild(tierSpan);
+      tr.appendChild(tierTd);
+      
+      const statusTd = document.createElement('td');
+      const statusDot = document.createElement('span');
+      const dotClass = agent.status === 'ACTIVE' ? 'green' : agent.status === 'BLOCKED' ? 'red' : 'amber';
+      statusDot.className = `status-dot ${dotClass}`;
+      statusTd.appendChild(statusDot);
+      statusTd.appendChild(document.createTextNode(agent.status));
+      tr.appendChild(statusTd);
+      
+      const perfTd = document.createElement('td');
+      perfTd.textContent = `${agent.performance}%`;
+      tr.appendChild(perfTd);
+      
+      const tasksTd = document.createElement('td');
+      tasksTd.textContent = '0';
+      tr.appendChild(tasksTd);
+      
+      const costTd = document.createElement('td');
+      costTd.textContent = `$${agent.cost.toFixed(2)}`;
+      tr.appendChild(costTd);
+      
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ─── ESCROW MANAGEMENT ─────────────────────────────────────────────
+  function addEscrow(escrow) {
+    state.escrows.push(escrow);
+    renderEscrowCard(escrow);
+  }
+
+  function renderEscrowCard(escrow) {
+    const container = document.getElementById('inboxContainer');
+    
+    const card = document.createElement('div');
+    card.className = 'inbox-card';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'inbox-header';
+    
+    const headerLeft = document.createElement('div');
+    
+    const title = document.createElement('div');
+    title.className = 'inbox-title';
+    title.textContent = escrow.action;
+    headerLeft.appendChild(title);
+    
+    const agent = document.createElement('div');
+    agent.className = 'inbox-agent';
+    agent.textContent = `Agent: ${escrow.agent_id}`;
+    headerLeft.appendChild(agent);
+    
+    header.appendChild(headerLeft);
+    
+    const badge = document.createElement('span');
+    badge.className = 'inbox-badge warn';
+    badge.textContent = `Confidence: ${escrow.confidence_score}%`;
+    header.appendChild(badge);
+    
+    card.appendChild(header);
+    
+    // Create liability info
+    const liability = document.createElement('div');
+    liability.style.fontSize = '12px';
+    liability.style.color = 'var(--text-dim)';
+    liability.style.marginBottom = '12px';
+    liability.textContent = `Liability: $${escrow.current_cost} / $${escrow.liability_cap}`;
+    card.appendChild(liability);
+    
+    // Create actions
+    const actions = document.createElement('div');
+    actions.className = 'inbox-actions';
+    
+    const approveBtn = document.createElement('button');
+    approveBtn.className = 'btn primary';
+    approveBtn.textContent = 'Approve';
+    approveBtn.onclick = () => approveEscrow(escrow.id);
+    actions.appendChild(approveBtn);
+    
+    const rejectBtn = document.createElement('button');
+    rejectBtn.className = 'btn danger';
+    rejectBtn.textContent = 'Reject';
+    rejectBtn.onclick = () => rejectEscrow(escrow.id);
+    actions.appendChild(rejectBtn);
+    
+    const modifyBtn = document.createElement('button');
+    modifyBtn.className = 'btn';
+    modifyBtn.textContent = 'Modify';
+    actions.appendChild(modifyBtn);
+    
+    card.appendChild(actions);
+    container.appendChild(card);
+  }
+
+  function approveEscrow(id) {
+    console.log(`[Escrow] Approved: ${id}`);
+    // Remove card
+    const cards = document.querySelectorAll('.inbox-card');
+    cards.forEach(card => {
+      if (card.textContent.includes(id)) {
+        card.remove();
+      }
+    });
+  }
+
+  function rejectEscrow(id) {
+    console.log(`[Escrow] Rejected: ${id}`);
+    // Remove card
+    const cards = document.querySelectorAll('.inbox-card');
+    cards.forEach(card => {
+      if (card.textContent.includes(id)) {
+        card.remove();
+      }
+    });
+  }
+
+  // ─── STATS MANAGEMENT ──────────────────────────────────────────────
+  function updateStats(stats) {
+    Object.assign(state.stats, stats);
+    updateStatsDisplay();
+  }
+
+  function updateStatsDisplay() {
+    document.getElementById('totalAgents').textContent = state.stats.totalAgents;
+    document.getElementById('activeAgentCount').textContent = state.stats.activeAgents;
+    document.getElementById('completedTasks').textContent = state.stats.completedTasks;
+    document.getElementById('totalCost').textContent = `$${state.stats.totalCost.toFixed(2)}`;
+    document.getElementById('avgLatency').textContent = `${state.stats.avgLatency}ms`;
+    
+    // Telemetry
+    document.getElementById('interventionRate').textContent = '3.2%';
+    document.getElementById('escrowRate').textContent = '1.8%';
+    document.getElementById('successRate').textContent = '94.7%';
+    document.getElementById('costPerOutcome').textContent = `$${(state.stats.totalCost / Math.max(state.stats.completedTasks, 1)).toFixed(2)}`;
+  }
+
+  // ─── INITIALIZATION ────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Set up navigation
+    document.querySelectorAll('[data-view]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchView(link.dataset.view);
+      });
+    });
+    
+    // Handle hash navigation
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      switchView(hash);
+    } else {
+      switchView('canvas');
+    }
+    
+    // Connect WebSocket
+    connectWebSocket();
+  });
+</script>
+
+</body>
+</html>

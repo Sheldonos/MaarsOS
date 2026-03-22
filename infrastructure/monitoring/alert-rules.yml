@@ -1,0 +1,391 @@
+# Prometheus Alert Rules for MAARS
+# Phase 3: Monitoring Infrastructure
+
+groups:
+  # Service Health Alerts
+  - name: service_health
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: ServiceHighRestartRate
+        expr: rate(process_start_time_seconds[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          category: stability
+        annotations:
+          summary: "Service {{ $labels.job }} is restarting frequently"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has restarted {{ $value }} times in the last 5 minutes."
+
+  # Error Rate Alerts
+  - name: error_rates
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: errors
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has an error rate of {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: ElevatedErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) > 0.01
+        for: 10m
+        labels:
+          severity: warning
+          category: errors
+        annotations:
+          summary: "Elevated error rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has an error rate of {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: HighClientErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"4.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          category: errors
+        annotations:
+          summary: "High client error rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has a 4xx error rate of {{ $value | humanizePercentage }} (threshold: 10%)"
+
+  # Latency Alerts
+  - name: latency
+    interval: 30s
+    rules:
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High P95 latency on {{ $labels.service }}"
+          description: "{{ $labels.service }} P95 latency is {{ $value }}s (threshold: 1s)"
+
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "High P99 latency on {{ $labels.service }}"
+          description: "{{ $labels.service }} P99 latency is {{ $value }}s (threshold: 2s)"
+
+      - alert: LatencySpike
+        expr: |
+          (
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (service, le)
+            )
+            /
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[1h])) by (service, le)
+            )
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Latency spike detected on {{ $labels.service }}"
+          description: "{{ $labels.service }} latency is {{ $value }}x higher than usual"
+
+  # Resource Utilization Alerts
+  - name: resource_utilization
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes
+            /
+            (node_memory_MemTotal_bytes or process_virtual_memory_max_bytes)
+          ) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is using {{ $value | humanizePercentage }} of available memory (threshold: 80%)"
+
+      - alert: CriticalMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes
+            /
+            (node_memory_MemTotal_bytes or process_virtual_memory_max_bytes)
+          ) > 0.90
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+        annotations:
+          summary: "Critical memory usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is using {{ $value | humanizePercentage }} of available memory (threshold: 90%)"
+
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is using {{ $value | humanizePercentage }} CPU (threshold: 80%)"
+
+      - alert: CriticalCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          category: resources
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.job }}"
+          description: "{{ $labels.job }} on {{ $labels.instance }} is using {{ $value | humanizePercentage }} CPU (threshold: 95%)"
+
+  # Economics and Budget Alerts (Phase 3)
+  - name: economics
+    interval: 1m
+    rules:
+      - alert: BudgetThresholdExceeded
+        expr: |
+          (
+            sum(llm_cost_total) by (project_id)
+            /
+            sum(budget_limit) by (project_id)
+          ) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          category: economics
+        annotations:
+          summary: "Budget threshold exceeded for project {{ $labels.project_id }}"
+          description: "Project {{ $labels.project_id }} has used {{ $value | humanizePercentage }} of its budget (threshold: 80%)"
+
+      - alert: BudgetCritical
+        expr: |
+          (
+            sum(llm_cost_total) by (project_id)
+            /
+            sum(budget_limit) by (project_id)
+          ) > 0.95
+        for: 1m
+        labels:
+          severity: critical
+          category: economics
+        annotations:
+          summary: "Budget critical for project {{ $labels.project_id }}"
+          description: "Project {{ $labels.project_id }} has used {{ $value | humanizePercentage }} of its budget (threshold: 95%)"
+
+      - alert: HighLLMCostRate
+        expr: rate(llm_cost_total[1h]) > 10.0
+        for: 15m
+        labels:
+          severity: warning
+          category: economics
+        annotations:
+          summary: "High LLM cost rate detected"
+          description: "LLM costs are increasing at ${{ $value }}/hour"
+
+      - alert: UnexpectedCostSpike
+        expr: |
+          (
+            rate(llm_cost_total[5m])
+            /
+            rate(llm_cost_total[1h] offset 1h)
+          ) > 3.0
+        for: 10m
+        labels:
+          severity: warning
+          category: economics
+        annotations:
+          summary: "Unexpected cost spike detected"
+          description: "LLM costs are {{ $value }}x higher than usual"
+
+  # Guardrail Violations (Phase 3)
+  - name: guardrails
+    interval: 30s
+    rules:
+      - alert: GuardrailViolation
+        expr: increase(guardrail_violations_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: safety
+        annotations:
+          summary: "Guardrail violation detected on {{ $labels.service }}"
+          description: "{{ $labels.service }} has {{ $value }} guardrail violations in the last 5 minutes (type: {{ $labels.violation_type }})"
+
+      - alert: HighGuardrailViolationRate
+        expr: rate(guardrail_violations_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: safety
+        annotations:
+          summary: "High guardrail violation rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has a guardrail violation rate of {{ $value }}/s (type: {{ $labels.violation_type }})"
+
+      - alert: ContentPolicyViolation
+        expr: increase(guardrail_violations_total{violation_type="content_policy"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: safety
+        annotations:
+          summary: "Content policy violation detected"
+          description: "Content policy violation detected on {{ $labels.service }}: {{ $value }} violations in 5 minutes"
+
+  # Infrastructure Alerts
+  - name: infrastructure
+    interval: 30s
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache is unavailable"
+
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is unavailable"
+
+      - alert: KafkaDown
+        expr: up{job="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Kafka is down"
+          description: "Kafka message broker is unavailable"
+
+      - alert: HighKafkaLag
+        expr: kafka_consumer_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Kafka consumer {{ $labels.consumer_group }} has a lag of {{ $value }} messages"
+
+  # Agent Pool Alerts (Phase 2)
+  - name: agent_pool
+    interval: 30s
+    rules:
+      - alert: LowAgentPoolCapacity
+        expr: |
+          (
+            sum(agent_pool_available) by (pool_type)
+            /
+            sum(agent_pool_total) by (pool_type)
+          ) < 0.20
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Low agent pool capacity for {{ $labels.pool_type }}"
+          description: "Agent pool {{ $labels.pool_type }} has only {{ $value | humanizePercentage }} capacity available"
+
+      - alert: AgentPoolExhausted
+        expr: sum(agent_pool_available) by (pool_type) == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: capacity
+        annotations:
+          summary: "Agent pool exhausted for {{ $labels.pool_type }}"
+          description: "Agent pool {{ $labels.pool_type }} has no available agents"
+
+      - alert: HighAgentFailureRate
+        expr: |
+          (
+            rate(agent_lifecycle_failures_total[5m])
+            /
+            rate(agent_lifecycle_total[5m])
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "High agent failure rate"
+          description: "Agent failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+  # Sandbox Execution Alerts (Phase 1)
+  - name: sandbox
+    interval: 30s
+    rules:
+      - alert: HighSandboxExecutionFailureRate
+        expr: |
+          (
+            rate(sandbox_execution_failures_total[5m])
+            /
+            rate(sandbox_execution_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: execution
+        annotations:
+          summary: "High sandbox execution failure rate"
+          description: "Sandbox execution failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: LongRunningSandboxExecution
+        expr: sandbox_execution_duration_seconds > 300
+        for: 1m
+        labels:
+          severity: warning
+          category: execution
+        annotations:
+          summary: "Long-running sandbox execution detected"
+          description: "Sandbox execution {{ $labels.execution_id }} has been running for {{ $value }}s (threshold: 300s)"
+
+# Made with Bob

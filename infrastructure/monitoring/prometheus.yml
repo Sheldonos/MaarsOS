@@ -1,0 +1,174 @@
+# Prometheus Configuration for MAARS Observability
+# Phase 3: Monitoring Infrastructure
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'maars-local'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - '/etc/prometheus/alert-rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          tier: 'monitoring'
+
+  # Vessel Gateway - API Gateway with JWT auth and rate limiting
+  - job_name: 'vessel-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-gateway:8080']
+        labels:
+          service: 'vessel-gateway'
+          tier: 'gateway'
+          phase: '1'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-gateway'
+
+  # Vessel Orchestrator - Master orchestration service
+  - job_name: 'vessel-orchestrator'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-orchestrator:8081']
+        labels:
+          service: 'vessel-orchestrator'
+          tier: 'core'
+          phase: '1'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-orchestrator'
+
+  # Vessel Sandbox - WASM execution engine
+  - job_name: 'vessel-sandbox'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-sandbox:8082']
+        labels:
+          service: 'vessel-sandbox'
+          tier: 'execution'
+          phase: '1'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-sandbox'
+
+  # Vessel LLM Router - LLM routing and caching service
+  - job_name: 'vessel-llm-router'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-llm-router:8083']
+        labels:
+          service: 'vessel-llm-router'
+          tier: 'ai'
+          phase: '2'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-llm-router'
+
+  # Vessel Swarm - Agent lifecycle management service
+  - job_name: 'vessel-swarm'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-swarm:8084']
+        labels:
+          service: 'vessel-swarm'
+          tier: 'core'
+          phase: '2'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-swarm'
+
+  # Vessel Observability - Metrics and monitoring service (Phase 3)
+  - job_name: 'vessel-observability'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-observability:8087']
+        labels:
+          service: 'vessel-observability'
+          tier: 'monitoring'
+          phase: '3'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-observability'
+
+  # Vessel Economics - Cost tracking and budget management (Phase 3)
+  - job_name: 'vessel-economics'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['vessel-economics:8090']
+        labels:
+          service: 'vessel-economics'
+          tier: 'business'
+          phase: '3'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'vessel-economics'
+
+  # Redis - Caching and rate limiting
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          tier: 'infrastructure'
+
+  # PostgreSQL - Database
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres'
+          tier: 'infrastructure'
+
+  # Kafka/Redpanda - Message broker
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['redpanda:9644']
+        labels:
+          service: 'kafka'
+          tier: 'infrastructure'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 10GB
+
+# Remote write configuration (for production)
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint"
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 50
+#       min_shards: 1
+#       max_samples_per_send: 5000
+#       batch_send_deadline: 5s
+#       min_backoff: 30ms
+#       max_backoff: 100ms
+
+# Made with Bob

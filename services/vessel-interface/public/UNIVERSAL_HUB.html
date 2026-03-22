@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAARS Canvas — Agent Orchestration</title>
+  <style>
+    /* Dark Theme Design System */
+    :root {
+      --bg: #0a0e1a;
+      --surface: #0f1419;
+      --surface2: #161b22;
+      --border: #1f2937;
+      --primary: #3b82f6;
+      --secondary: #60a5fa;
+      --accent: #8b5cf6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --orange: #f97316;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --text-bright: #f9fafb;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+    
+    /* Top Navigation */
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 60px;
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 32px;
+    }
+    
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-bright);
+      text-decoration: none;
+    }
+    
+    .nav-brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-left: 24px;
+    }
+    
+    .nav-tab {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--text-dim);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
+    }
+    
+    .badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    
+    .badge.preview {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .btn-run-all {
+      padding: 8px 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 150ms;
+    }
+    
+    .btn-run-all:hover {
+      background: var(--secondary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Main Layout */
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 60px);
+      margin-top: 60px;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .sidebar-search {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    
+    .sidebar-search:focus {
+      border-color: var(--primary);
+    }
+    
+    .sidebar-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .section-toggle {
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    /* Agent Cards */
+    .agent-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    
+    .agent-card:hover {
+      border-color: var(--primary);
+      transform: translateX(2px);
+    }
+    
+    .agent-card.working {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .agent-card.idle {
+      border-color: var(--text-dim);
+    }
+    
+    .agent-card.thinking {
+      border-color: var(--purple);
+      background: rgba(168, 85, 247, 0.05);
+    }
+    
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .agent-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .agent-info {
+      flex: 1;
+    }
+    
+    .agent-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    
+    .agent-id {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: monospace;
+    }
+    
+    .agent-status {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    
+    .agent-status.working {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--primary);
+    }
+    
+    .agent-status.idle {
+      background: rgba(156, 163, 175, 0.2);
+      color: var(--text-dim);
+    }
+    
+    .agent-status.thinking {
+      background: rgba(168, 85, 247, 0.2);
+      color: var(--purple);
+    }
+    
+    /* System Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    
+    .metric-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+    
+    .metric-chart {
+      height: 40px;
+      margin-top: 8px;
+      position: relative;
+    }
+    
+    .metric-line {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* Canvas */
+    .canvas {
+      flex: 1;
+      position: relative;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    
+    .canvas-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    
+    /* Flow Nodes */
+    .flow-node {
+      position: absolute;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      min-width: 200px;
+      cursor: pointer;
+      transition: all 200ms;
+    }
+    
+    .flow-node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    
+    .flow-node.planning {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    .flow-node.executing {
+      border-color: var(--amber);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    
+    .flow-node.complete {
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+    
+    .flow-node.guardrail {
+      border-color: var(--red);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+    
+    .node-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    
+    .node-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+    
+    .node-status {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .node-status-icon {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    
+    /* Connection Lines */
+    .connection-line {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    .connection-path {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+    
+    .connection-path.blue {
+      stroke: var(--primary);
+      filter: drop-shadow(0 0 4px var(--primary));
+    }
+    
+    .connection-path.amber {
+      stroke: var(--amber);
+      filter: drop-shadow(0 0 4px var(--amber));
+    }
+    
+    .connection-path.green {
+      stroke: var(--green);
+      filter: drop-shadow(0 0 4px var(--green));
+    }
+    
+    .connection-path.purple {
+      stroke: var(--purple);
+      filter: drop-shadow(0 0 4px var(--purple));
+    }
+    
+    /* Guardrail Modal */
+    .guardrail-modal {
+      position: absolute;
+      bottom: 100px;
+      right: 100px;
+      background: var(--surface);
+      border: 2px solid var(--red);
+      border-radius: 12px;
+      padding: 20px;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 50;
+    }
+    
+    .modal-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+    }
+    
+    .modal-content {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 150ms;
+    }
+    
+    .btn-approve {
+      background: var(--green);
+      color: white;
+    }
+    
+    .btn-approve:hover {
+      background: #059669;
+    }
+    
+    .btn-reject {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+    
+    .btn-reject:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+    
+    /* Mini Map */
+    .mini-map {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 200px;
+      height: 120px;
+      background: rgba(15, 20, 25, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .mini-map-content {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    
+    /* Zoom Controls */
+    .zoom-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 20, 25, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .zoom-btn {
+      width: 32px;
+      height: 32px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 150ms;
+    }
+    
+    .zoom-btn:hover {
+      background: var(--border);
+      border-color: var(--primary);
+    }
+    
+    .fit-screen-btn {
+      padding: 0 12px;
+      font-size: 12px;
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="HOME.html" class="nav-brand">
+    <div class="nav-brand-icon">⬡</div>
+    <span>MAARS<span style="color: var(--primary);">OS</span></span>
+  </a>
+  
+  <div class="nav-tabs">
+    <button class="nav-tab" onclick="window.location.href='HOME.html'">Overview</button>
+    <button class="nav-tab active">Canvas</button>
+    <button class="nav-tab" onclick="window.location.href='UNIVERSAL_HUB.html'">Hub</button>
+    <button class="nav-tab">Inbox</button>
+    <button class="nav-tab">Simulation</button>
+    <button class="nav-tab">Agents</button>
+    <button class="nav-tab" onclick="window.location.href='LIVE_DASHBOARD.html'">Telemetry</button>
+  </div>
+  
+  <div class="nav-right">
+    <span class="badge">v8.0.0-alpha</span>
+    <span class="badge preview">Phase 8 Preview</span>
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span>Connected</span>
+    </div>
+    <button class="btn-run-all" onclick="runAll()">
+      <span>▶</span>
+      <span>Run All</span>
+    </button>
+  </div>
+</nav>
+
+<div class="main-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <input type="text" class="sidebar-search" placeholder="Search agents..." />
+    </div>
+    
+    <div class="sidebar-section">
+      <div class="section-title">
+        <span>ACTIVE SWARM</span>
+        <span class="section-toggle">▼</span>
+      </div>
+      
+      <div class="agent-card working" onclick="selectAgent('A-101')">
+        <div class="agent-header">
+          <div class="agent-avatar">👤</div>
+          <div class="agent-info">
+            <div class="agent-name">Swarm Leader</div>
+            <div class="agent-id">ID: A-101</div>
+          </div>
+          <div class="agent-status working">WORKING</div>
+        </div>
+      </div>
+      
+      <div class="agent-card idle" onclick="selectAgent('A-102')">
+        <div class="agent-header">
+          <div class="agent-avatar" style="background: linear-gradient(135deg, var(--cyan), var(--green));">👤</div>
+          <div class="agent-info">
+            <div class="agent-name">Analyst Agent</div>
+            <div class="agent-id">ID: A-102</div>
+          </div>
+          <div class="agent-status idle">IDLE</div>
+        </div>
+      </div>
+      
+      <div class="agent-card thinking" onclick="selectAgent('A-103')">
+        <div class="agent-header">
+          <div class="agent-avatar" style="background: linear-gradient(135deg, var(--purple), var(--accent));">👤</div>
+          <div class="agent-info">
+            <div class="agent-name">Synthesis Agent</div>
+            <div class="agent-id">ID: A-103</div>
+          </div>
+          <div class="agent-status thinking">THINKING</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">
+      <div class="section-title">
+        <span>SYSTEM METRICS</span>
+      </div>
+      
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">CPU Load</div>
+          <div class="metric-value" style="color: var(--primary);">45%</div>
+          <div class="metric-chart">
+            <svg class="metric-line" viewBox="0 0 100 40" preserveAspectRatio="none">
+              <polyline
+                fill="none"
+                stroke="var(--primary)"
+                stroke-width="2"
+                points="0,30 10,28 20,25 30,27 40,22 50,20 60,18 70,22 80,19 90,17 100,15"
+              />
+            </svg>
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-label">Memory Usage</div>
+          <div class="metric-value" style="color: var(--green);">6.2GB<span style="font-size: 14px; color: var(--text-dim);">/16GB</span></div>
+        </div>
+        
+        <div class="metric-card">
+          <div class="metric-label">Token Usage</div>
+          <div class="metric-value" style="color: var(--amber);">85k<span style="font-size: 14px; color: var(--text-dim);">/min</span></div>
+          <div class="metric-chart">
+            <svg class="metric-line" viewBox="0 0 100 40" preserveAspectRatio="none">
+              <polyline
+                fill="none"
+                stroke="var(--amber)"
+                stroke-width="2"
+                points="0,35 10,33 20,30 30,28 40,25 50,23 60,20 70,18 80,15 90,12 100,10"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  
+  <main class="canvas">
+    <div class="canvas-container" id="canvasContainer">
+      <svg id="connectionsSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+        <!-- Blue connections from Master Orchestrator -->
+        <path class="connection-path blue" d="M 730 200 Q 600 300 470 380" />
+        <path class="connection-path amber" d="M 730 200 Q 730 300 730 380" />
+        <path class="connection-path green" d="M 730 200 Q 860 300 990 380" />
+        
+        <!-- Purple connections from Research Agent -->
+        <path class="connection-path purple" d="M 400 450 Q 350 500 350 550" />
+        <path class="connection-path purple" d="M 470 450 Q 500 500 530 550" />
+        
+        <!-- Amber connections from Execution Agent -->
+        <path class="connection-path amber" d="M 730 450 Q 680 500 630 550" />
+        <path class="connection-path amber" d="M 730 450 Q 780 500 830 550" />
+        
+        <!-- Green connections from Output Agent -->
+        <path class="connection-path green" d="M 990 450 Q 940 500 940 550" />
+        <path class="connection-path green" d="M 1040 450 Q 1090 500 1140 550" />
+      </svg>
+      
+      <!-- Master Orchestrator -->
+      <div class="flow-node planning" style="top: 140px; left: 580px;" onclick="selectNode('orchestrator')">
+        <div class="node-icon">⬡</div>
+        <div class="node-title">Master Orchestrator</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--primary);"></span>
+          <span>PLANNING</span>
+        </div>
+      </div>
+      
+      <!-- Research Agent -->
+      <div class="flow-node" style="top: 380px; left: 320px; border-color: var(--purple);" onclick="selectNode('research')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--purple), var(--accent));">🔍</div>
+        <div class="node-title">Research Agent</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--purple);"></span>
+          <span>IDLE</span>
+        </div>
+      </div>
+      
+      <!-- Execution Agent -->
+      <div class="flow-node executing" style="top: 380px; left: 580px;" onclick="selectNode('execution')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--amber), var(--orange));">⚙️</div>
+        <div class="node-title">Execution Agent</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--amber);"></span>
+          <span>EXECUTING</span>
+        </div>
+      </div>
+      
+      <!-- Output Agent -->
+      <div class="flow-node complete" style="top: 380px; left: 840px;" onclick="selectNode('output')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--green), var(--cyan));">📄</div>
+        <div class="node-title">Output Agent</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--green);"></span>
+          <span>IDLE</span>
+        </div>
+      </div>
+      
+      <!-- Sub-agents -->
+      <div class="flow-node" style="top: 540px; left: 280px; min-width: 150px; border-color: var(--cyan);" onclick="selectNode('scraper')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--cyan), var(--primary)); width: 36px; height: 36px; font-size: 18px;">🌐</div>
+        <div class="node-title" style="font-size: 14px;">Web Scraper</div>
+      </div>
+      
+      <div class="flow-node" style="top: 540px; left: 460px; min-width: 150px; border-color: var(--cyan);" onclick="selectNode('pdf')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--cyan), var(--primary)); width: 36px; height: 36px; font-size: 18px;">📑</div>
+        <div class="node-title" style="font-size: 14px;">PDF Analyzer</div>
+      </div>
+      
+      <div class="flow-node guardrail" style="top: 540px; left: 560px; min-width: 150px;" onclick="selectNode('code')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--red), var(--orange)); width: 36px; height: 36px; font-size: 18px;">⚠️</div>
+        <div class="node-title" style="font-size: 14px;">Code Runner</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--red);"></span>
+          <span style="color: var(--red);">GUARDRAIL HOLD</span>
+        </div>
+      </div>
+      
+      <div class="flow-node" style="top: 540px; left: 760px; min-width: 150px; border-color: var(--orange);" onclick="selectNode('api')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--orange), var(--amber)); width: 36px; height: 36px; font-size: 18px;">📞</div>
+        <div class="node-title" style="font-size: 14px;">API Caller</div>
+      </div>
+      
+      <div class="flow-node complete" style="top: 540px; left: 880px; min-width: 150px;" onclick="selectNode('report')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--green), var(--cyan)); width: 36px; height: 36px; font-size: 18px;">✍️</div>
+        <div class="node-title" style="font-size: 14px;">Report Writer</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--green);"></span>
+          <span style="color: var(--green);">COMPLETE</span>
+        </div>
+      </div>
+      
+      <div class="flow-node complete" style="top: 540px; left: 1080px; min-width: 150px;" onclick="selectNode('notify')">
+        <div class="node-icon" style="background: linear-gradient(135deg, var(--green), var(--cyan)); width: 36px; height: 36px; font-size: 18px;">📧</div>
+        <div class="node-title" style="font-size: 14px;">Notification Sender</div>
+        <div class="node-status">
+          <span class="node-status-icon" style="background: var(--green);"></span>
+          <span style="color: var(--green);">COMPLETE</span>
+        </div>
+      </div>
+      
+      <!-- Guardrail Modal -->
+      <div class="guardrail-modal" id="guardrailModal">
+        <div class="modal-header">Guardrail triggered:</div>
+        <div class="modal-content">
+          Output contains PII.<br>
+          Awaiting approval.
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-approve" onclick="approveGuardrail()">Approve</button>
+          <button class="btn btn-reject" onclick="rejectGuardrail()">Reject</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Zoom Controls -->
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomOut()">−</button>
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <button class="zoom-btn fit-screen-btn" onclick="fitToScreen()">Fit to Screen</button>
+    </div>
+    
+    <!-- Mini Map -->
+    <div class="mini-map">
+      <div class="mini-map-content">
+        <svg width="100%" height="100%" viewBox="0 0 200 120">
+          <rect x="80" y="10" width="40" height="20" fill="var(--primary)" opacity="0.5" rx="2" />
+          <rect x="40" y="50" width="30" height="15" fill="var(--purple)" opacity="0.5" rx="2" />
+          <rect x="80" y="50" width="30" height="15" fill="var(--amber)" opacity="0.5" rx="2" />
+          <rect x="120" y="50" width="30" height="15" fill="var(--green)" opacity="0.5" rx="2" />
+          <rect x="30" y="80" width="20" height="12" fill="var(--cyan)" opacity="0.3" rx="1" />
+          <rect x="55" y="80" width="20" height="12" fill="var(--cyan)" opacity="0.3" rx="1" />
+          <rect x="80" y="80" width="20" height="12" fill="var(--red)" opacity="0.5" rx="1" />
+          <rect x="105" y="80" width="20" height="12" fill="var(--orange)" opacity="0.3" rx="1" />
+          <rect x="130" y="80" width="20" height="12" fill="var(--green)" opacity="0.5" rx="1" />
+          <rect x="155" y="80" width="20" height="12" fill="var(--green)" opacity="0.5" rx="1" />
+        </svg>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Initialize canvas interactions
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('MAARS Canvas initialized');
+});
+
+// Node selection
+function selectNode(nodeId) {
+  console.log('Node selected:', nodeId);
+}
+
+// Agent selection
+function selectAgent(agentId) {
+  console.log('Agent selected:', agentId);
+}
+
+// Run All button
+function runAll() {
+  console.log('Run All clicked');
+  alert('Starting swarm execution...');
+}
+
+// Guardrail actions
+function approveGuardrail() {
+  const modal = document.getElementById('guardrailModal');
+  modal.style.display = 'none';
+  console.log('Guardrail approved');
+  alert('Guardrail approved - execution continuing');
+}
+
+function rejectGuardrail() {
+  const modal = document.getElementById('guardrailModal');
+  modal.style.display = 'none';
+  console.log('Guardrail rejected');
+  alert('Guardrail rejected - execution halted');
+}
+
+// Zoom controls
+function zoomIn() {
+  console.log('Zoom in');
+}
+
+function zoomOut() {
+  console.log('Zoom out');
+}
+
+function fitToScreen() {
+  console.log('Fit to screen');
+}
+</script>
+
+</body>
+</html>

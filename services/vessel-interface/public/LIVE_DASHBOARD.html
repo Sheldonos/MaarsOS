@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAARS OS — Live Orchestration Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #0f1419;
+      --surface2: #161b22;
+      --border: #1f2937;
+      --primary: #3b82f6;
+      --secondary: #60a5fa;
+      --accent: #8b5cf6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --orange: #f97316;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --text-bright: #f9fafb;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+    
+    /* Main Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 80px 380px 1fr 380px;
+      height: 100vh;
+    }
+    
+    /* Left Sidebar Navigation */
+    .nav-sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+      gap: 32px;
+    }
+    
+    .nav-logo {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    
+    .nav-items {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      flex: 1;
+    }
+    
+    .nav-item {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 150ms;
+      color: var(--text-dim);
+      font-size: 20px;
+      position: relative;
+    }
+    
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    
+    .nav-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary);
+    }
+    
+    .nav-item-label {
+      font-size: 9px;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    
+    .nav-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      background: var(--red);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    
+    .nav-settings {
+      margin-top: auto;
+    }
+    
+    /* Swarm Roster Panel */
+    .roster-panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    
+    .panel-subtitle {
+      font-size: 13px;
+      color: var(--text);
+    }
+    
+    .roster-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    /* Swarm Cards */
+    .swarm-card {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    
+    .swarm-card:hover {
+      border-color: var(--primary);
+      transform: translateX(2px);
+    }
+    
+    .swarm-card.running {
+      border-color: var(--green);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    
+    .swarm-card.executing {
+      border-color: var(--amber);
+      background: rgba(245, 158, 11, 0.05);
+    }
+    
+    .swarm-card.planning {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .swarm-card.blocked {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    
+    .swarm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .swarm-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    
+    .swarm-status {
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .swarm-status.running {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--green);
+    }
+    
+    .swarm-status.executing {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--amber);
+    }
+    
+    .swarm-status.planning {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--primary);
+    }
+    
+    .swarm-status.blocked {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--red);
+    }
+    
+    .swarm-agents {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    
+    .swarm-progress {
+      margin-bottom: 8px;
+    }
+    
+    .progress-bar {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      border-radius: 3px;
+      transition: width 300ms;
+    }
+    
+    .progress-fill.amber {
+      background: linear-gradient(90deg, var(--amber), var(--orange));
+    }
+    
+    .progress-fill.blue {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+    
+    .progress-fill.red {
+      background: linear-gradient(90deg, var(--red), var(--orange));
+    }
+    
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    
+    .swarm-time {
+      font-family: monospace;
+    }
+    
+    .swarm-alert {
+      font-size: 11px;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    
+    /* System Vitals */
+    .system-vitals {
+      padding: 20px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .vitals-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    
+    .vital-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    .vital-label {
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .vital-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .vital-dot.green { background: var(--green); }
+    .vital-dot.blue { background: var(--primary); }
+    .vital-dot.amber { background: var(--amber); }
+    
+    .vital-value {
+      font-weight: 700;
+      color: var(--text-bright);
+      font-variant-numeric: tabular-nums;
+    }
+    
+    /* Center Canvas */
+    .canvas-panel {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    
+    .canvas-header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .canvas-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .canvas-controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .canvas-btn {
+      padding: 8px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 150ms;
+    }
+    
+    .canvas-btn:hover {
+      border-color: var(--primary);
+      background: var(--surface2);
+    }
+    
+    .canvas-btn.primary {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: white;
+    }
+    
+    .canvas-btn.primary:hover {
+      background: var(--orange);
+    }
+    
+    .canvas-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Orchestration Visualization */
+    .orchestration {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 64px;
+      padding: 40px;
+    }
+    
+    .master-node {
+      text-align: center;
+      position: relative;
+    }
+    
+    .master-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 80px rgba(59, 130, 246, 0.6);
+      animation: pulse-glow 2s ease-in-out infinite;
+      position: relative;
+    }
+    
+    .master-icon::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      opacity: 0.3;
+      filter: blur(30px);
+      z-index: -1;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 80px rgba(59, 130, 246, 0.6); }
+      50% { box-shadow: 0 0 120px rgba(59, 130, 246, 0.8); }
+    }
+    
+    .master-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    
+    .agent-tier {
+      display: flex;
+      gap: 80px;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .agent-node {
+      text-align: center;
+      position: relative;
+    }
+    
+    .agent-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 12px;
+      position: relative;
+    }
+    
+    .agent-icon.purple {
+      background: linear-gradient(135deg, var(--purple), var(--accent));
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.5);
+    }
+    
+    .agent-icon.amber {
+      background: linear-gradient(135deg, var(--amber), var(--orange));
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
+    }
+    
+    .agent-icon.green {
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
+    }
+    
+    .agent-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+    }
+    
+    .agent-status-badge {
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+    
+    .agent-status-badge.executing {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--amber);
+    }
+    
+    .agent-status-badge.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--green);
+    }
+    
+    .agent-status-badge.complete {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--green);
+    }
+    
+    .sub-agents {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 900px;
+    }
+    
+    .sub-agent {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      width: 140px;
+      text-align: center;
+      transition: all 150ms;
+      cursor: pointer;
+    }
+    
+    .sub-agent:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .sub-agent.active {
+      border-color: var(--green);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    
+    .sub-agent.executing {
+      border-color: var(--amber);
+      background: rgba(245, 158, 11, 0.05);
+    }
+    
+    .sub-agent-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .sub-agent-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+    
+    .sub-agent-status {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    
+    .sub-agent-progress {
+      font-size: 10px;
+      color: var(--amber);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    
+    /* Connection Lines */
+    .connection-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    /* Mission Intel Panel */
+    .intel-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .intel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .intel-time {
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+    }
+    
+    .intel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    .intel-section {
+      margin-bottom: 24px;
+    }
+    
+    .intel-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    
+    /* Output Stream */
+    .output-stream {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .output-line {
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    
+    .output-line .timestamp {
+      color: var(--text-dim);
+      opacity: 0.6;
+    }
+    
+    .output-line .success {
+      color: var(--green);
+    }
+    
+    .output-line .warning {
+      color: var(--amber);
+    }
+    
+    .output-line .error {
+      color: var(--red);
+    }
+    
+    /* Performance Charts */
+    .performance-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .perf-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .perf-title {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .perf-chart {
+      height: 80px;
+      position: relative;
+    }
+    
+    .chart-line {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .perf-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 10px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    /* Next Actions */
+    .action-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    
+    .action-card.warning {
+      border-color: var(--amber);
+      background: rgba(245, 158, 11, 0.05);
+    }
+    
+    .action-card.error {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    
+    .action-card.info {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .action-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    
+    .action-description {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .action-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 150ms;
+    }
+    
+    .action-btn.approve {
+      background: var(--green);
+      color: white;
+    }
+    
+    .action-btn.approve:hover {
+      background: #059669;
+    }
+    
+    .action-btn.defer {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    
+    .action-btn.defer:hover {
+      background: var(--surface2);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444c56; }
+  </style>
+</head>
+<body>
+
+<div class="dashboard">
+  <!-- Left Navigation Sidebar -->
+  <aside class="nav-sidebar">
+    <div class="nav-logo">⬡</div>
+    
+    <div class="nav-items">
+      <div class="nav-item">
+        <span>🔷</span>
+        <span class="nav-item-label">Swarm</span>
+      </div>
+      
+      <div class="nav-item">
+        <span>⬜</span>
+        <span class="nav-item-label">Canvas</span>
+      </div>
+      
+      <div class="nav-item active">
+        <span>👁️</span>
+        <span class="nav-item-label">Vision</span>
+      </div>
+      
+      <div class="nav-item">
+        <span>📧</span>
+        <span class="nav-item-label">Inbox</span>
+        <span class="nav-badge">3</span>
+      </div>
+      
+      <div class="nav-item">
+        <span>▶️</span>
+        <span class="nav-item-label">Simulation</span>
+      </div>
+      
+      <div class="nav-item">
+        <span>🤖</span>
+        <span class="nav-item-label">Agents</span>
+      </div>
+      
+      <div class="nav-item">
+        <span>📊</span>
+        <span class="nav-item-label">Telemetry</span>
+      </div>
+    </div>
+    
+    <div class="nav-settings">
+      <div class="nav-item">
+        <span>⚙️</span>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- Swarm Roster Panel -->
+  <aside class="roster-panel">
+    <div class="panel-header">
+      <div class="panel-title">LIVE SWARM ROSTER & SYSTEM VITALS</div>
+    </div>
+    
+    <div class="roster-content">
+      <div class="swarm-card running">
+        <div class="swarm-header">
+          <div class="swarm-name">LLC → TikTok Pipeline</div>
+          <div class="swarm-status running">RUNNING</div>
+        </div>
+        <div class="swarm-agents">7 agents active</div>
+        <div class="swarm-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 62%;"></div>
+          </div>
+          <div class="progress-info">
+            <span>62%</span>
+            <span class="swarm-time">00:14:32</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="swarm-card executing">
+        <div class="swarm-header">
+          <div class="swarm-name">Market Analyzer Alpha</div>
+          <div class="swarm-status executing">EXECUTING</div>
+        </div>
+        <div class="swarm-agents">4 agents</div>
+        <div class="swarm-progress">
+          <div class="progress-bar">
+            <div class="progress-fill amber" style="width: 38%;"></div>
+          </div>
+          <div class="progress-info">
+            <span>38%</span>
+            <span class="swarm-time">00:07:11</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="swarm-card planning">
+        <div class="swarm-header">
+          <div class="swarm-name">Brand Incubator v2</div>
+          <div class="swarm-status planning">PLANNING</div>
+        </div>
+        <div class="swarm-agents">2 agents</div>
+        <div class="swarm-progress">
+          <div class="progress-bar">
+            <div class="progress-fill blue" style="width: 8%;"></div>
+          </div>
+          <div class="progress-info">
+            <span>8%</span>
+            <span class="swarm-time">00:01:44</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="swarm-card blocked">
+        <div class="swarm-header">
+          <div class="swarm-name">Research Swarm: AI Patents</div>
+          <div class="swarm-status blocked">GUARDRAIL HOLD</div>
+        </div>
+        <div class="swarm-agents">5 agents</div>
+        <div class="swarm-progress">
+          <div class="progress-bar">
+            <div class="progress-fill red" style="width: 45%;"></div>
+          </div>
+          <div class="progress-info">
+            <span>Paused</span>
+            <span class="swarm-time">00:21:09</span>
+          </div>
+        </div>
+        <div class="swarm-alert">
+          <span>⚠️</span>
+          <span>Paused its current</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="system-vitals">
+      <div class="vitals-title">SYSTEM VITALS</div>
+      
+      <div class="vital-item">
+        <div class="vital-label">
+          <span class="vital-dot green"></span>
+          <span>Active Agents:</span>
+        </div>
+        <div class="vital-value">18</div>
+      </div>
+      
+      <div class="vital-item">
+        <div class="vital-label">
+          <span class="vital-dot blue"></span>
+          <span>Tasks Queued:</span>
+        </div>
+        <div class="vital-value">47</div>
+      </div>
+      
+      <div class="vital-item">
+        <div class="vital-label">
+          <span class="vital-dot amber"></span>
+          <span>Token Burn:</span>
+        </div>
+        <div class="vital-value">142k/min</div>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- Center Canvas -->
+  <main class="canvas-panel">
+    <div class="canvas-header">
+      <div class="canvas-title">THE LIVE ORCHESTRATION CANVAS</div>
+      <div class="canvas-controls">
+        <button class="canvas-btn">
+          <span>🔍</span>
+        </button>
+        <button class="canvas-btn">
+          <span>−</span>
+        </button>
+        <button class="canvas-btn">
+          <span>⛶</span>
+        </button>
+        <button class="canvas-btn primary">
+          <span>⏸</span>
+          <span>Pause All</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="canvas-content">
+      <div class="orchestration">
+        <div class="master-node">
+          <div class="master-icon">⭐</div>
+          <div class="master-label">Master Orchestrator</div>
+        </div>
+        
+        <div class="agent-tier">
+          <div class="agent-node">
+            <div class="agent-icon purple">🔍</div>
+            <div class="agent-label">Content Research Agent</div>
+          </div>
+          
+          <div class="agent-node">
+            <div class="agent-icon amber">📝</div>
+            <div class="agent-label">Production Agent</div>
+            <div class="agent-status-badge executing">EXECUTING</div>
+          </div>
+          
+          <div class="agent-node">
+            <div class="agent-icon green">📡</div>
+            <div class="agent-label">Distribution Agent</div>
+            <div class="agent-status-badge complete">COMPLETE<br>on 2/3</div>
+          </div>
+        </div>
+        
+        <div class="sub-agents">
+          <div class="sub-agent">
+            <div class="sub-agent-icon">📊</div>
+            <div class="sub-agent-name">Trend Scraper</div>
+            <div class="sub-agent-status">Idle</div>
+          </div>
+          
+          <div class="sub-agent">
+            <div class="sub-agent-icon">🔍</div>
+            <div class="sub-agent-name">Competitor Analyzer</div>
+            <div class="sub-agent-status">Idle</div>
+          </div>
+          
+          <div class="sub-agent executing">
+            <div class="sub-agent-icon">✍️</div>
+            <div class="sub-agent-name">Script Writer</div>
+            <div class="sub-agent-status">generating hook for video 3...</div>
+            <div class="sub-agent-progress">drafting section 2...</div>
+          </div>
+          
+          <div class="sub-agent">
+            <div class="sub-agent-icon">▶️</div>
+            <div class="sub-agent-name">Video Generator</div>
+            <div class="sub-agent-status">Idle</div>
+          </div>
+          
+          <div class="sub-agent">
+            <div class="sub-agent-icon">🎵</div>
+            <div class="sub-agent-name">Visualerator</div>
+            <div class="sub-agent-status">Idle</div>
+          </div>
+          
+          <div class="sub-agent">
+            <div class="sub-agent-icon">🎧</div>
+            <div class="sub-agent-name">Audio Mixer</div>
+            <div class="sub-agent-status">Idle</div>
+          </div>
+          
+          <div class="sub-agent active">
+            <div class="sub-agent-icon">📱</div>
+            <div class="sub-agent-name">TikTok Publisher</div>
+            <div class="sub-agent-status">PUBLISHED • 6:00PM</div>
+          </div>
+          
+          <div class="sub-agent active">
+            <div class="sub-agent-icon">📸</div>
+            <div class="sub-agent-name">Instagram Reels</div>
+            <div class="sub-agent-status">PUBLISHED</div>
+          </div>
+          
+          <div class="sub-agent executing">
+            <div class="sub-agent-icon">▶️</div>
+            <div class="sub-agent-name">YouTube Shorts</div>
+            <div class="sub-agent-status">IN PROGRESS</div>
+            <div class="sub-agent-progress">75%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- Mission Intel Panel -->
+  <aside class="intel-panel">
+    <div class="intel-header">
+      <div class="panel-title">MISSION INTEL</div>
+      <div class="intel-time">00:14:33</div>
+    </div>
+    
+    <div class="intel-content">
+      <div class="intel-section">
+        <div class="intel-section-title">OUTPUT STREAM</div>
+        <div class="output-stream">
+          <div class="output-line">
+            <span class="timestamp">[00:14:31]</span> <span class="success">→ Script_v3.txt generated by Script Writer</span>
+          </div>
+          <div class="output-line">
+            <span class="timestamp">[00:14:29]</span> <span class="success">→ TikTok post scheduled for 6:00PM by TikTok Publisher</span>
+          </div>
+          <div class="output-line">
+            <span class="timestamp">[00:14:27]</span> <span class="warning">→ Guardrail passed: brand voice check on Video Generator output</span>
+          </div>
+          <div class="output-line">
+            <span class="timestamp">[00:14:25]</span> <span class="success">→ Competitor Analyzer completed analysis of 3 entities</span>
+          </div>
+          <div class="output-line">
+            <span class="timestamp">[00:14:22]</span> <span class="success">→ Trend Scraper detected new viral pattern</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="intel-section">
+        <div class="intel-section-title">PERFORMANCE</div>
+        <div class="performance-grid">
+          <div class="perf-card">
+            <div class="perf-title">TOKEN USAGE</div>
+            <div class="perf-chart">
+              <svg class="chart-line" viewBox="0 0 100 80" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke="var(--primary)"
+                  stroke-width="2"
+                  points="0,60 10,55 20,50 30,48 40,45 50,42 60,38 70,35 80,30 90,28 100,25"
+                />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="perf-card">
+            <div class="perf-title">AGENT STATE</div>
+            <div class="perf-legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--amber);"></span>
+                <span>Executing 44%</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--primary);"></span>
+                <span>Idle 31%</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--green);"></span>
+                <span>Planning 18%</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--red);"></span>
+                <span>Blocked 7%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="intel-section">
+        <div class="intel-section-title">NEXT ACTIONS</div>
+        
+        <div class="action-card warning">
+          <div class="action-title">High-Risk Content Warning</div>
+          <div class="action-description">TikTok Publisher flagged potential policy violation. Requires human review.</div>
+          <div class="action-buttons">
+            <button class="action-btn approve">Approve</button>
+            <button class="action-btn defer">Defer</button>
+          </div>
+        </div>
+        
+        <div class="action-card error">
+          <div class="action-title">Budget Threshold Reached</div>
+          <div class="action-description">Research Swarm exceeded 10k token budget. Approve additional spend?</div>
+          <div class="action-buttons">
+            <button class="action-btn approve">Approve</button>
+            <button class="action-btn defer">Defer</button>
+          </div>
+        </div>
+        
+        <div class="action-card info">
+          <div class="action-title">New Swarm Request</div>
+          <div class="action-description">User 'Admin' initiated Sales Outreach Swarm. Requires approval to launch.</div>
+          <div class="action-buttons">
+            <button class="action-btn approve">Approve</button>
+            <button class="action-btn defer">Defer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// Real-time updates simulation
+setInterval(() => {
+  // Update time
+  const timeEl = document.querySelector('.intel-time');
+  const currentTime = timeEl.textContent.split(':');
+  let seconds = parseInt(currentTime[2]) + 1;
+  let minutes = parseInt(currentTime[1]);
+  let hours = parseInt(currentTime[0]);
+  
+  if (seconds >= 60) {
+    seconds = 0;
+    minutes++;
+  }
+  if (minutes >= 60) {
+    minutes = 0;
+    hours++;
+  }
+  
+  timeEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}, 1000);
+
+// Add interactivity
+document.querySelectorAll('.swarm-card').forEach(card => {
+  card.addEventListener('click', () => {
+    console.log('Swarm card clicked:', card.querySelector('.swarm-name').textContent);
+  });
+});
+
+document.querySelectorAll('.sub-agent').forEach(agent => {
+  agent.addEventListener('click', () => {
+    console.log('Sub-agent clicked:', agent.querySelector('.sub-agent-name').textContent);
+  });
+});
+
+document.querySelectorAll('.action-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const action = e.target.textContent;
+    const card = e.target.closest('.action-card');
+    const title = card.querySelector('.action-title').textContent;
+    console.log(`${action} action for: ${title}`);
+    card.style.opacity = '0.5';
+    setTimeout(() => card.remove(), 300);
+  });
+});
+
+console.log('MAARS Live Dashboard initialized');
+</script>
+
+</body>
+</html>

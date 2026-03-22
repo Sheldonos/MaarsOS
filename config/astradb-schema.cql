@@ -258,6 +258,70 @@ CREATE TABLE IF NOT EXISTS failure_patterns (
 );
 
 -- ============================================================================
+-- VESSEL-OBSERVABILITY SERVICE TABLES
+-- ============================================================================
+
+-- Guardrail policies define rules and constraints for agent behavior
+CREATE TABLE IF NOT EXISTS guardrail_policies (
+    tenant_id UUID,
+    policy_id UUID,
+    name TEXT,
+    type TEXT,  -- e.g., 'content_filter', 'cost_limit', 'rate_limit', 'security'
+    config MAP<TEXT, TEXT>,  -- Policy-specific configuration as key-value pairs
+    severity TEXT,  -- 'low', 'medium', 'high', 'critical'
+    enabled BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (tenant_id, policy_id)
+);
+
+-- Policy violations track when agents violate guardrail policies
+CREATE TABLE IF NOT EXISTS policy_violations (
+    tenant_id UUID,
+    violation_id UUID,
+    policy_id UUID,
+    agent_id UUID,
+    task_id UUID,
+    severity TEXT,
+    details TEXT,  -- JSON string with violation details
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((tenant_id, policy_id), timestamp, violation_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, violation_id ASC);
+
+-- Create index for querying violations by agent
+CREATE INDEX IF NOT EXISTS policy_violations_agent_idx ON policy_violations (agent_id);
+
+-- Create index for querying violations by task
+CREATE INDEX IF NOT EXISTS policy_violations_task_idx ON policy_violations (task_id);
+
+-- Anomaly detections track unusual patterns in agent behavior or system metrics
+CREATE TABLE IF NOT EXISTS anomaly_detections (
+    tenant_id UUID,
+    anomaly_id UUID,
+    agent_id UUID,
+    metric_type TEXT,  -- e.g., 'response_time', 'token_usage', 'error_rate'
+    value DOUBLE,
+    threshold DOUBLE,
+    severity TEXT,  -- 'low', 'medium', 'high'
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((tenant_id, agent_id), timestamp, anomaly_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, anomaly_id ASC);
+
+-- Create index for querying anomalies by metric type
+CREATE INDEX IF NOT EXISTS anomaly_detections_metric_idx ON anomaly_detections (metric_type);
+
+-- Metrics history stores time-series metrics for all services
+CREATE TABLE IF NOT EXISTS metrics_history (
+    service TEXT,
+    metric_name TEXT,
+    metric_id UUID,
+    value DOUBLE,
+    labels MAP<TEXT, TEXT>,  -- Additional metric labels/dimensions
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((service, metric_name), timestamp, metric_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, metric_id ASC);
+
+-- ============================================================================
 -- ECONOMICS LAYER
 -- ============================================================================
 
@@ -311,6 +375,93 @@ CREATE TABLE IF NOT EXISTS legal_contracts (
     created_at TIMESTAMP,
     PRIMARY KEY (tenant_id, contract_id)
 );
+
+-- ============================================================================
+-- VESSEL-ECONOMICS SERVICE TABLES
+-- ============================================================================
+
+-- Escrow accounts track tenant balances and locked funds
+CREATE TABLE IF NOT EXISTS escrow_accounts (
+    tenant_id UUID PRIMARY KEY,
+    balance DECIMAL,  -- Available balance in USD
+    locked_balance DECIMAL,  -- Funds locked for pending transactions
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- Escrow transactions record all financial movements
+CREATE TABLE IF NOT EXISTS escrow_transactions (
+    tenant_id UUID,
+    transaction_id UUID,
+    type TEXT,  -- 'deposit', 'withdrawal', 'lock', 'unlock', 'charge'
+    amount DECIMAL,
+    task_id UUID,  -- Optional: associated task
+    status TEXT,  -- 'pending', 'completed', 'failed', 'cancelled'
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((tenant_id), timestamp, transaction_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, transaction_id ASC);
+
+-- Create index for querying transactions by task
+CREATE INDEX IF NOT EXISTS escrow_transactions_task_idx ON escrow_transactions (task_id);
+
+-- Cost records track detailed usage costs per agent/task
+CREATE TABLE IF NOT EXISTS cost_records (
+    tenant_id UUID,
+    cost_id UUID,
+    agent_id UUID,
+    task_id UUID,
+    provider TEXT,  -- 'openai', 'anthropic', 'google', etc.
+    model TEXT,  -- Model name
+    input_tokens INT,
+    output_tokens INT,
+    cost DECIMAL,  -- Cost in USD
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((tenant_id, agent_id), timestamp, cost_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, cost_id ASC);
+
+-- Create index for querying costs by task
+CREATE INDEX IF NOT EXISTS cost_records_task_idx ON cost_records (task_id);
+
+-- Create index for querying costs by provider
+CREATE INDEX IF NOT EXISTS cost_records_provider_idx ON cost_records (provider);
+
+-- Budget limits define spending constraints per tenant
+CREATE TABLE IF NOT EXISTS budget_limits (
+    tenant_id UUID PRIMARY KEY,
+    limit_amount DECIMAL,  -- Maximum allowed spending
+    used_amount DECIMAL,  -- Current spending in period
+    period TEXT,  -- 'daily', 'weekly', 'monthly'
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+-- Audit trail for compliance and regulatory requirements
+CREATE TABLE IF NOT EXISTS audit_trail (
+    tenant_id UUID,
+    audit_id UUID,
+    event_type TEXT,  -- 'transaction', 'budget_change', 'policy_update', etc.
+    details TEXT,  -- JSON string with event details
+    timestamp TIMESTAMP,
+    PRIMARY KEY ((tenant_id), timestamp, audit_id)
+) WITH CLUSTERING ORDER BY (timestamp DESC, audit_id ASC);
+
+-- Create index for querying audit events by type
+CREATE INDEX IF NOT EXISTS audit_trail_event_type_idx ON audit_trail (event_type);
+
+-- Invoices for billing and financial reporting
+CREATE TABLE IF NOT EXISTS invoices (
+    tenant_id UUID,
+    invoice_id UUID,
+    period_start TIMESTAMP,
+    period_end TIMESTAMP,
+    total_amount DECIMAL,
+    status TEXT,  -- 'draft', 'issued', 'paid', 'overdue', 'cancelled'
+    generated_at TIMESTAMP,
+    PRIMARY KEY (tenant_id, invoice_id)
+);
+
+-- Create index for querying invoices by status
+CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices (status);
 
 -- ============================================================================
 -- INTEGRATION LAYER (MCP & Connectors)

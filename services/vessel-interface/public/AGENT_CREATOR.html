@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create New Agent - MAARS OS</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #0f1419;
+      --surface2: #161b22;
+      --border: #1f2937;
+      --primary: #3b82f6;
+      --secondary: #60a5fa;
+      --accent: #8b5cf6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --text-bright: #f9fafb;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 40px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .creator-container {
+      max-width: 600px;
+      width: 100%;
+    }
+    
+    .creator-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .creator-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 12px;
+    }
+    
+    .creator-subtitle {
+      font-size: 16px;
+      color: var(--text-dim);
+    }
+    
+    .creator-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+    }
+    
+    .form-input, .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: all 150ms;
+    }
+    
+    .form-input:focus, .form-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    
+    .quick-templates {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    
+    .template-btn {
+      padding: 10px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 150ms;
+      text-align: left;
+    }
+    
+    .template-btn:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 150ms;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--secondary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--surface2);
+    }
+    
+    .status-message {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--green);
+      color: var(--green);
+    }
+    
+    .status-message.loading {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<div class="creator-container">
+  <div class="creator-header">
+    <div class="creator-title">🤖 Create New Agent</div>
+    <div class="creator-subtitle">Describe what you want your agent to do in natural language</div>
+  </div>
+  
+  <div class="creator-form">
+    <div class="form-group">
+      <label class="form-label" for="agentName">Agent Name</label>
+      <input 
+        type="text" 
+        id="agentName" 
+        class="form-input" 
+        placeholder="e.g., Market Research Agent"
+      />
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label" for="agentDescription">What should this agent do?</label>
+      <textarea 
+        id="agentDescription" 
+        class="form-textarea" 
+        placeholder="Describe the agent's purpose and capabilities in natural language...
+
+Example: 'Analyze cryptocurrency markets, track price movements, identify trading opportunities, and generate daily reports with actionable insights.'"
+      ></textarea>
+      <div class="form-hint">Be as specific as possible. The orchestrator will create the necessary sub-agents automatically.</div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Quick Templates</label>
+      <div class="quick-templates">
+        <button class="template-btn" onclick="useTemplate('research')">
+          🔍 Research Agent
+        </button>
+        <button class="template-btn" onclick="useTemplate('content')">
+          ✍️ Content Creator
+        </button>
+        <button class="template-btn" onclick="useTemplate('data')">
+          📊 Data Analyst
+        </button>
+        <button class="template-btn" onclick="useTemplate('automation')">
+          ⚙️ Automation Agent
+        </button>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="window.close()">Cancel</button>
+      <button class="btn btn-primary" onclick="createAgent()">Create Agent</button>
+    </div>
+    
+    <div id="statusMessage" class="status-message"></div>
+  </div>
+</div>
+
+<script>
+const templates = {
+  research: {
+    name: 'Research Agent',
+    description: 'Conduct comprehensive research on any topic, gather information from multiple sources, analyze findings, and generate detailed reports with citations and insights.'
+  },
+  content: {
+    name: 'Content Creator Agent',
+    description: 'Generate high-quality content including blog posts, social media updates, marketing copy, and video scripts. Optimize for SEO and engagement across multiple platforms.'
+  },
+  data: {
+    name: 'Data Analyst Agent',
+    description: 'Analyze datasets, identify patterns and trends, create visualizations, generate statistical reports, and provide actionable business intelligence insights.'
+  },
+  automation: {
+    name: 'Automation Agent',
+    description: 'Automate repetitive tasks, integrate with APIs and services, schedule workflows, monitor systems, and handle routine operations without human intervention.'
+  }
+};
+
+function useTemplate(type) {
+  const template = templates[type];
+  document.getElementById('agentName').value = template.name;
+  document.getElementById('agentDescription').value = template.description;
+}
+
+function createAgent() {
+  const name = document.getElementById('agentName').value.trim();
+  const description = document.getElementById('agentDescription').value.trim();
+  
+  if (!name || !description) {
+    alert('Please provide both a name and description for your agent');
+    return;
+  }
+  
+  const statusEl = document.getElementById('statusMessage');
+  statusEl.className = 'status-message loading';
+  statusEl.style.display = 'block';
+  statusEl.textContent = '🤖 Creating agent and orchestrating sub-agents...';
+  
+  // Simulate API call
+  setTimeout(() => {
+    statusEl.className = 'status-message success';
+    statusEl.textContent = `✅ Agent "${name}" created successfully! Redirecting to canvas...`;
+    
+    setTimeout(() => {
+      // In production, this would pass the agent config to the orchestrator
+      window.location.href = `UNIVERSAL_HUB.html?agent=${encodeURIComponent(name)}&desc=${encodeURIComponent(description)}`;
+    }, 1500);
+  }, 2000);
+  
+  console.log('Creating agent:', { name, description });
+}
+
+// Allow Enter key in name field
+document.getElementById('agentName').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    document.getElementById('agentDescription').focus();
+  }
+});
+
+console.log('Agent Creator initialized');
+</script>
+
+</body>
+</html>

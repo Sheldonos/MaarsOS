@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package maars.llm;
+
+option go_package = "github.com/maars/vessel-llm-router/proto";
+
+service LLMRouter {
+  rpc RoutePrompt (RouteRequest) returns (RouteResponse) {}
+  rpc StreamPrompt (RouteRequest) returns (stream StreamResponse) {}
+}
+
+message Message {
+  string role = 1;     // system, user, assistant, tool
+  string content = 2;
+}
+
+message RouteRequest {
+  string task_id = 1;
+  string tenant_id = 2;
+  repeated Message messages = 3;
+  string model_tier = 4;        // NANO, MID, FRONTIER
+  float max_cost_usd = 5;
+  repeated string tool_allowlist = 6;
+  int32 max_tokens = 7;
+  float temperature = 8;
+}
+
+message RouteResponse {
+  string completion = 1;
+  string model_used = 2;
+  int32 prompt_tokens = 3;
+  int32 completion_tokens = 4;
+  float cost_usd = 5;
+  bool cached_hit = 6;
+  string finish_reason = 7;
+}
+
+message StreamResponse {
+  string delta = 1;
+  string model_used = 2;
+  bool is_final = 3;
+  int32 prompt_tokens = 4;
+  int32 completion_tokens = 5;
+  float cost_usd = 6;
+}

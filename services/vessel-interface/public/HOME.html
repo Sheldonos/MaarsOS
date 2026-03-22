@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="js/maars-api.js"></script>
+  <script src="js/integration.js"></script>
+  <title>MAARS OS — Autonomous AI Orchestration Platform</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #0f1419;
+      --surface2: #161b22;
+      --border: #1f2937;
+      --primary: #3b82f6;
+      --secondary: #60a5fa;
+      --accent: #8b5cf6;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --orange: #f97316;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+      --text-bright: #f9fafb;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    
+    /* Top Navigation */
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 64px;
+      background: rgba(10, 14, 26, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 32px;
+    }
+    
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-bright);
+      text-decoration: none;
+    }
+    
+    .nav-brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-left: 32px;
+    }
+    
+    .nav-tab {
+      padding: 10px 20px;
+      font-size: 15px;
+      color: var(--text-dim);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 150ms;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    
+    .nav-tab:hover { 
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-tab.active { 
+      color: var(--text-bright);
+      background: rgba(59, 130, 246, 0.1);
+    }
+    
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-left: auto;
+    }
+    
+    .btn-new {
+      padding: 10px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 150ms;
+    }
+    
+    .btn-new:hover {
+      background: var(--secondary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 18px;
+      transition: all 150ms;
+    }
+    
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    
+    /* Main Content */
+    .main-content {
+      margin-top: 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      padding: 48px;
+      min-height: calc(100vh - 64px);
+    }
+    
+    /* Left Panel */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      background: rgba(15, 20, 25, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px;
+    }
+    
+    .hero-section {
+      margin-bottom: 16px;
+    }
+    
+    .hero-title {
+      font-size: 52px;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+    
+    .hero-subtitle {
+      font-size: 16px;
+      color: var(--text-dim);
+      margin-bottom: 48px;
+    }
+    
+    /* Use Case Grid */
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .use-case-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      cursor: pointer;
+      transition: all 200ms;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .use-case-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    .use-case-card.blue { border-color: rgba(59, 130, 246, 0.4); }
+    .use-case-card.blue:hover { 
+      border-color: var(--primary); 
+      box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
+    }
+    
+    .use-case-card.purple { border-color: rgba(168, 85, 247, 0.4); }
+    .use-case-card.purple:hover { 
+      border-color: var(--purple); 
+      box-shadow: 0 12px 32px rgba(168, 85, 247, 0.4);
+    }
+    
+    .use-case-card.amber { border-color: rgba(245, 158, 11, 0.4); }
+    .use-case-card.amber:hover { 
+      border-color: var(--amber); 
+      box-shadow: 0 12px 32px rgba(245, 158, 11, 0.4);
+    }
+    
+    .use-case-card.cyan { border-color: rgba(6, 182, 212, 0.4); }
+    .use-case-card.cyan:hover { 
+      border-color: var(--cyan); 
+      box-shadow: 0 12px 32px rgba(6, 182, 212, 0.4);
+    }
+    
+    .use-case-card.green { border-color: rgba(16, 185, 129, 0.4); }
+    .use-case-card.green:hover { 
+      border-color: var(--green); 
+      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
+    }
+    
+    .use-case-card.red { border-color: rgba(239, 68, 68, 0.4); }
+    .use-case-card.red:hover { 
+      border-color: var(--red); 
+      box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
+    }
+    
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+    
+    .card-icon.blue { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+    .card-icon.purple { background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3); }
+    .card-icon.amber { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); }
+    .card-icon.cyan { background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3); }
+    .card-icon.green { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+    .card-icon.red { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
+    
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    
+    .card-description {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    
+    /* Input Section */
+    .input-section {
+      margin-top: auto;
+    }
+    
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .input-field {
+      flex: 1;
+      padding: 18px 24px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: all 150ms;
+    }
+    
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+    
+    .input-field::placeholder {
+      color: var(--text-dim);
+    }
+    
+    .btn-generate {
+      padding: 18px 36px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 150ms;
+    }
+    
+    .btn-generate:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    /* Right Panel */
+    .right-panel {
+      background: rgba(15, 20, 25, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .preview-icon {
+      font-size: 16px;
+      color: var(--text-dim);
+    }
+    
+    .preview-title {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    
+    /* Orchestrator Visualization */
+    .orchestrator-viz {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 56px;
+      padding: 40px 0;
+    }
+    
+    .orchestrator-node {
+      text-align: center;
+    }
+    
+    .orchestrator-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 60px rgba(59, 130, 246, 0.5);
+      animation: float 3s ease-in-out infinite;
+      position: relative;
+    }
+    
+    .orchestrator-icon::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      opacity: 0.3;
+      filter: blur(20px);
+      z-index: -1;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    
+    .orchestrator-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    
+    .agent-row {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .agent-row::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 40px;
+      background: linear-gradient(180deg, var(--primary), transparent);
+    }
+    
+    .agent-node {
+      text-align: center;
+      position: relative;
+    }
+    
+    .agent-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 12px;
+      position: relative;
+    }
+    
+    .agent-icon.purple {
+      background: linear-gradient(135deg, var(--purple), var(--accent));
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.4);
+    }
+    
+    .agent-icon.amber {
+      background: linear-gradient(135deg, var(--amber), var(--orange));
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);
+    }
+    
+    .agent-icon.green {
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+    }
+    
+    .agent-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .sub-agent-row {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .sub-agent {
+      text-align: center;
+      width: 90px;
+    }
+    
+    .sub-agent-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin: 0 auto 8px;
+      transition: all 150ms;
+    }
+    
+    .sub-agent:hover .sub-agent-icon {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .sub-agent-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+    
+    /* Template Cards at Bottom */
+    .template-showcase {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .template-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    
+    .template-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .template-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 12px;
+    }
+    
+    .template-viz {
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .template-viz-node {
+      width: 10px;
+      height: 28px;
+      border-radius: 3px;
+      background: var(--border);
+      transition: all 200ms;
+    }
+    
+    .template-viz-node.active {
+      background: var(--primary);
+    }
+    
+    .template-card:hover .template-viz-node.active {
+      background: var(--secondary);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1400px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .right-panel {
+        min-height: 700px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .use-case-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-content {
+        padding: 24px;
+      }
+      
+      .hero-title {
+        font-size: 36px;
+      }
+      
+      .left-panel, .right-panel {
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a href="#" class="nav-brand">
+    <div class="nav-brand-icon">⬡</div>
+    <span>MAARS<span style="color: var(--primary);">OS</span></span>
+  </a>
+  
+  <div class="nav-tabs">
+    <a href="#" class="nav-tab active">Canvas</a>
+    <a href="#" class="nav-tab">Artistry Live</a>
+    <a href="#" class="nav-tab">Render</a>
+    <a href="#" class="nav-tab">Code</a>
+  </div>
+  
+  <div class="nav-right">
+    <button class="btn-new">
+      <span>+</span>
+      <span>New File</span>
+    </button>
+    <button class="btn-icon" title="New Folder">📁</button>
+    <button class="btn-icon" title="Settings">⚙️</button>
+  </div>
+</nav>
+
+<div class="main-content">
+  <div class="left-panel">
+    <div class="hero-section">
+      <h1 class="hero-title">What will you build today?</h1>
+      <p class="hero-subtitle">MAARS OS — Autonomous AI Orchestration Platform</p>
+    </div>
+    
+    <div class="use-case-grid">
+      <div class="use-case-card blue" onclick="selectUseCase('agent-swarms')">
+        <div class="card-icon blue">🔷</div>
+        <div class="card-title">Agent Swarms</div>
+        <div class="card-description">Deploy multi-agent pipelines in seconds</div>
+      </div>
+      
+      <div class="use-case-card purple" onclick="selectUseCase('cinematic')">
+        <div class="card-icon purple">🎬</div>
+        <div class="card-title">Cinematic<br>World-Building</div>
+        <div class="card-description">Generate full fictional universes with lore</div>
+      </div>
+      
+      <div class="use-case-card amber" onclick="selectUseCase('trading')">
+        <div class="card-icon amber">📈</div>
+        <div class="card-title">Algorithmic<br>Trading</div>
+        <div class="card-description">Autonomous market analysis & execution</div>
+      </div>
+      
+      <div class="use-case-card cyan" onclick="selectUseCase('ecommerce')">
+        <div class="card-icon cyan">🛒</div>
+        <div class="card-title">Automated<br>E-Commerce</div>
+        <div class="card-description">End-to-end store management & fulfillment</div>
+      </div>
+      
+      <div class="use-case-card green" onclick="selectUseCase('research')">
+        <div class="card-icon green">🔬</div>
+        <div class="card-title">Research &<br>Intelligence</div>
+        <div class="card-description">Deep web research synthesized into reports</div>
+      </div>
+      
+      <div class="use-case-card red" onclick="selectUseCase('operations')">
+        <div class="card-icon red">🤖</div>
+        <div class="card-title">Autonomous<br>Operations</div>
+        <div class="card-description">Self-managing business workflows</div>
+      </div>
+    </div>
+    
+    <div class="input-section">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          class="input-field" 
+          placeholder="Describe what you want to build..."
+          id="buildInput"
+        />
+        <button class="btn-generate" onclick="generateWorkflow()">
+          <span>✨</span>
+          <span>Generate</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="right-panel">
+    <div class="preview-header">
+      <span class="preview-icon">👁️</span>
+      <span class="preview-title">Live Preview — LLC to TikTok Pipeline</span>
+    </div>
+    
+    <div class="orchestrator-viz">
+      <div class="orchestrator-node">
+        <div class="orchestrator-icon">⬡</div>
+        <div class="orchestrator-label">Orchestrator</div>
+      </div>
+      
+      <div class="agent-row">
+        <div class="agent-node">
+          <div class="agent-icon purple">🔍</div>
+          <div class="agent-label">Research Agent</div>
+        </div>
+        
+        <div class="agent-node">
+          <div class="agent-icon amber">✍️</div>
+          <div class="agent-label">Content Agent</div>
+        </div>
+        
+        <div class="agent-node">
+          <div class="agent-icon green">📡</div>
+          <div class="agent-label">Distribution Agent</div>
+        </div>
+      </div>
+      
+      <div class="sub-agent-row">
+        <div class="sub-agent">
+          <div class="sub-agent-icon">⛏️</div>
+          <div class="sub-agent-label">Data Mining</div>
+        </div>
+        
+        <div class="sub-agent">
+          <div class="sub-agent-icon">🧠</div>
+          <div class="sub-agent-label">Synthesis</div>
+        </div>
+        
+        <div class="sub-agent">
+          <div class="sub-agent-icon">📝</div>
+          <div class="sub-agent-label">Script Generation</div>
+        </div>
+        
+        <div class="sub-agent">
+          <div class="sub-agent-icon">🎨</div>
+          <div class="sub-agent-label">Visual Asset Creation</div>
+        </div>
+        
+        <div class="sub-agent">
+          <div class="sub-agent-icon">🔗</div>
+          <div class="sub-agent-label">Platform Integration</div>
+        </div>
+        
+        <div class="sub-agent">
+          <div class="sub-agent-icon">📊</div>
+          <div class="sub-agent-label">Performance Analytics</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="template-showcase">
+      <div class="template-card">
+        <div class="template-title">Reality Series Generator</div>
+        <div class="template-viz">
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node"></div>
+          <div class="template-viz-node active"></div>
+        </div>
+      </div>
+      
+      <div class="template-card">
+        <div class="template-title">Market Analyzer</div>
+        <div class="template-viz">
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node"></div>
+          <div class="template-viz-node active"></div>
+        </div>
+      </div>
+      
+      <div class="template-card">
+        <div class="template-title">Brand Incubator</div>
+        <div class="template-viz">
+          <div class="template-viz-node"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node active"></div>
+          <div class="template-viz-node"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectUseCase(type) {
+  console.log('Selected use case:', type);
+  // Simulate agent creation
+  showNotification(`Creating ${type} swarm...`);
+  setTimeout(() => {
+    window.location.href = 'UNIVERSAL_HUB.html?template=' + type;
+  }, 500);
+}
+
+function generateWorkflow() {
+  const input = document.getElementById('buildInput').value;
+  if (!input.trim()) {
+    alert('Please describe what you want to build');
+    return;
+  }
+  console.log('Generating workflow for:', input);
+  
+  // Show loading state
+  showNotification('🤖 Analyzing your request and creating agents...');
+  
+  // Simulate API call to orchestrator
+  setTimeout(() => {
+    showNotification('✅ Agents created! Opening canvas...');
+    setTimeout(() => {
+      window.location.href = 'UNIVERSAL_HUB.html?custom=' + encodeURIComponent(input);
+    }, 1000);
+  }, 2000);
+}
+
+function showNotification(message) {
+  // Remove existing notification
+  const existing = document.querySelector('.notification');
+  if (existing) existing.remove();
+  
+  // Create notification
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 3 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+document.getElementById('buildInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    generateWorkflow();
+  }
+});
+
+// Add notification styles
+const style = document.createElement('style');
+style.textContent = `
+  .notification {
+    position: fixed;
+    top: 80px;
+    right: 32px;
+    background: var(--surface);
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    padding: 16px 24px;
+    color: var(--text-bright);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+    transition: opacity 0.3s;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+console.log('HOME page initialized - Natural language agent creation ready');
+</script>
+
+</body>
+</html>
