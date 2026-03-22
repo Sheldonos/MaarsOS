@@ -15,6 +15,7 @@ import (
 	"github.com/maars/vessel-gateway/internal/config"
 	"github.com/maars/vessel-gateway/internal/middleware"
 	"github.com/maars/vessel-gateway/internal/proxy"
+	"github.com/maars/vessel-gateway/internal/websocket"
 )
 
 func main() {
@@ -37,6 +38,14 @@ func main() {
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	// Initialize WebSocket hub
+	hub := websocket.NewHub()
+	go hub.Run()
+	logger.Info("WebSocket hub started")
+
+	// Initialize WebSocket handler
+	wsHandler := websocket.NewHandler(hub)
 
 	// Create router
 	router := gin.New()
@@ -63,6 +72,17 @@ func main() {
 
 	// Initialize proxy
 	orchestratorProxy := proxy.NewProxy(cfg.OrchestratorURL, logger)
+
+	// WebSocket routes (with authentication, no rate limiting for persistent connections)
+	ws := router.Group("/ws")
+	ws.Use(jwtMiddleware.Authenticate())
+	{
+		ws.GET("/swarm", wsHandler.ServeSwarmChannel)
+		ws.GET("/guardrails", wsHandler.ServeGuardrailsChannel)
+		ws.GET("/costs", wsHandler.ServeCostsChannel)
+		ws.GET("/simulation", wsHandler.ServeSimulationChannel)
+		ws.GET("/stats", wsHandler.GetStats)
+	}
 
 	// API routes with authentication and rate limiting
 	v1 := router.Group("/v1")

@@ -594,4 +594,122 @@ CREATE TABLE IF NOT EXISTS agent_templates (
     compiled_task_graph_json TEXT,
     thumbnail_url TEXT,
     created_at TIMESTAMP
+
+-- ============================================================================
+-- PHASE 5+ EXTENSIONS - Slack Integration, MCP, Simulation, Long-Running
+-- Added: 2026-03-22 per SPEC_COMPLIANCE_GAP_ANALYSIS.md
+-- ============================================================================
+
+-- Slack workspace integrations for enterprise viral adoption
+CREATE TABLE IF NOT EXISTS slack_integrations (
+    tenant_id UUID,
+    workspace_id TEXT,
+    bot_token_vault_path TEXT,
+    signing_secret_vault_path TEXT,
+    default_channel_id TEXT,
+    notify_on_milestone BOOLEAN DEFAULT TRUE,
+    notify_on_completion BOOLEAN DEFAULT TRUE,
+    notify_on_inbox_card BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    PRIMARY KEY (tenant_id, workspace_id)
+);
+
+-- Goal-to-Slack thread mapping for ambient learning
+CREATE TABLE IF NOT EXISTS goal_slack_threads (
+    goal_id UUID PRIMARY KEY,
+    tenant_id UUID,
+    workspace_id TEXT,
+    channel_id TEXT,
+    thread_ts TEXT,
+    created_at TIMESTAMP
+);
+
+-- Inbox cards for Action Intercept Layer (human-in-the-loop approvals)
+CREATE TABLE IF NOT EXISTS inbox_cards (
+    card_id UUID PRIMARY KEY,
+    tenant_id UUID,
+    goal_id UUID,
+    task_id UUID,
+    agent_id UUID,
+    trigger_type TEXT,  -- 'BUDGET_EXCEEDED', 'EXECUTION_FAILURE', 'PII_DETECTED', 'EXTERNAL_WRITE', 'ANOMALY_DETECTED'
+    severity TEXT,  -- 'WARN', 'BLOCK', 'CRITICAL'
+    title TEXT,
+    description TEXT,
+    proposed_action TEXT,
+    estimated_cost_usd DECIMAL,
+    status TEXT DEFAULT 'PENDING',  -- 'PENDING', 'APPROVED', 'REJECTED', 'DEFERRED', 'EXPIRED'
+    resolved_by_user_id UUID,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP,
+    expires_at TIMESTAMP
+);
+
+-- Create index for querying inbox cards by tenant and status
+CREATE INDEX IF NOT EXISTS inbox_cards_tenant_status_idx ON inbox_cards (tenant_id);
+CREATE INDEX IF NOT EXISTS inbox_cards_status_idx ON inbox_cards (status);
+
+-- Custom MCP server registry for enterprise tool integration
+CREATE TABLE IF NOT EXISTS mcp_servers (
+    server_id UUID PRIMARY KEY,
+    tenant_id UUID,
+    server_name TEXT,
+    server_url TEXT,
+    auth_type TEXT,  -- 'bearer', 'oauth2', 'api_key', 'none'
+    auth_token_vault_path TEXT,
+    allowed_tools LIST<TEXT>,
+    status TEXT DEFAULT 'ACTIVE',  -- 'ACTIVE', 'INACTIVE', 'ERROR'
+    last_health_check TIMESTAMP,
+    created_at TIMESTAMP
+);
+
+-- Create index for querying MCP servers by tenant
+CREATE INDEX IF NOT EXISTS mcp_servers_tenant_idx ON mcp_servers (tenant_id);
+
+-- Simulation results for Agent-Based Modeling (ABM) dry-run capability
+CREATE TABLE IF NOT EXISTS simulation_results_detailed (
+    simulation_id UUID PRIMARY KEY,
+    tenant_id UUID,
+    goal_description TEXT,
+    simulation_runs INT,
+    confidence_score FLOAT,
+    predicted_cost_p50 DECIMAL,
+    predicted_cost_p90 DECIMAL,
+    predicted_cost_p99 DECIMAL,
+    predicted_duration_p50_minutes INT,
+    predicted_duration_p90_minutes INT,
+    predicted_duration_p99_minutes INT,
+    predicted_success_rate FLOAT,
+    risk_factors_json TEXT,  -- JSON array of risk factors
+    recommended_config_json TEXT,  -- JSON object with recommended settings
+    created_at TIMESTAMP
+);
+
+-- Create index for querying simulations by tenant
+CREATE INDEX IF NOT EXISTS simulation_results_tenant_idx ON simulation_results_detailed (tenant_id);
+
+-- Progress states for long-running project context restoration (Initializer Agent)
+CREATE TABLE IF NOT EXISTS progress_states (
+    project_id UUID,
+    tenant_id UUID,
+    last_checkpoint TIMESTAMP,
+    checkpoint_count INT,
+    current_phase TEXT,
+    completed_tasks LIST<UUID>,
+    pending_tasks LIST<UUID>,
+    world_state_json TEXT,  -- GraphRAG world state snapshot
+    style_guidelines_json TEXT,  -- Persistent style/tone guidelines
+    git_commit_hash TEXT,
+    git_branch TEXT,
+    total_cost_usd DECIMAL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    PRIMARY KEY (project_id, tenant_id)
+);
+
+-- Create index for querying progress states by tenant
+CREATE INDEX IF NOT EXISTS progress_states_tenant_idx ON progress_states (tenant_id);
+
+-- ============================================================================
+-- END PHASE 5+ EXTENSIONS
+-- ============================================================================
 );
